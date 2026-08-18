@@ -25,24 +25,33 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh;
-      display: grid;
-      place-items: center;
       font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
       background: var(--bg);
       color: var(--ink);
-      padding: 24px;
     }
+    #lock {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(20, 18, 14, 0.38);
+      backdrop-filter: blur(4px);
+    }
+    #lock.off { display: none; }
     .card {
-      width: min(420px, 100%);
+      width: min(340px, 100%);
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 14px;
-      padding: 28px 24px 22px;
+      padding: 24px 22px 20px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+      text-align: center;
     }
-    h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-    .note { color: var(--mute); font-size: 13px; margin-bottom: 18px; }
-    label { display: block; font-size: 12px; color: var(--mute); margin: 12px 0 5px; }
+    h1 { font-size: 17px; font-weight: 600; margin-bottom: 14px; }
     input {
+      margin-top: 10px;
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -53,7 +62,7 @@
       outline: none;
     }
     input:focus { border-color: var(--ink); }
-    .row { display: flex; gap: 8px; margin-top: 18px; }
+    .row { display: flex; gap: 8px; margin-top: 16px; justify-content: center; }
     button {
       font: inherit;
       cursor: pointer;
@@ -94,12 +103,9 @@
 <body>
   <div id="lock">
     <div class="card" id="pinCard">
-      <h1 id="pinTitle">Set a PIN</h1>
-      <p class="note" id="pinNote">This PIN only blocks casual use on this device. It does not protect the GitHub token and does not help if someone can read this browser’s storage.</p>
-      <label for="pin">PIN</label>
-      <input id="pin" type="password" inputmode="numeric" autocomplete="off" />
-      <label for="pin2" id="pin2Lab">Confirm PIN</label>
-      <input id="pin2" type="password" inputmode="numeric" autocomplete="off" />
+      <h1 id="pinTitle">PIN</h1>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" />
+      <input id="pin2" type="password" inputmode="numeric" autocomplete="off" placeholder="Confirm PIN" />
       <p class="err" id="pinErr"></p>
       <div class="row">
         <button type="button" id="pinGo">Continue</button>
@@ -108,19 +114,13 @@
 
     <div class="card" id="ghCard" hidden>
       <h1>GitHub</h1>
-      <p class="note">Asked every visit. Nothing here is saved in the browser. Token is held in memory for this session only.</p>
-      <label for="ghUser">GitHub username</label>
-      <input id="ghUser" type="text" autocomplete="off" spellcheck="false" />
-      <label for="ghRepo">Private repo name</label>
-      <input id="ghRepo" type="text" autocomplete="off" spellcheck="false" />
-      <label for="ghToken">Fine-grained personal access token</label>
-      <input id="ghToken" type="password" autocomplete="off" />
+      <input id="ghUser" type="text" autocomplete="off" spellcheck="false" placeholder="Username" />
+      <input id="ghToken" type="password" autocomplete="off" placeholder="Token" />
       <p class="err" id="ghErr"></p>
       <div class="row">
         <button type="button" class="ghost" id="backPin">Back</button>
         <button type="button" id="ghGo">Unlock</button>
       </div>
-      <p class="scope">Use a fine-grained token on only this private repo. Permission: Contents — Read and write. Expire it (about 90 days) and rotate it.</p>
     </div>
   </div>
 
@@ -136,10 +136,11 @@
     const PIN_SALT = "pinSaltV1";
     const PIN_HASH = "pinHashV1";
     const IDLE_MS = 15 * 60 * 1000;
+    const PRIVATE_REPO = "web-hub";
 
     const session = {
       user: null,
-      repo: null,
+      repo: PRIVATE_REPO,
       token: null,
       branch: "main",
       path: "learning-tracker.json",
@@ -151,7 +152,7 @@
 
     function clearSession() {
       session.user = null;
-      session.repo = null;
+      session.repo = PRIVATE_REPO;
       session.token = null;
       session.branch = "main";
       session.path = "learning-tracker.json";
@@ -191,7 +192,6 @@
       clearSession();
       stopIdle();
       document.getElementById("ghUser").value = "";
-      document.getElementById("ghRepo").value = "";
       document.getElementById("ghToken").value = "";
       document.getElementById("ghErr").textContent = "";
       document.getElementById("pin").value = "";
@@ -233,10 +233,10 @@
     }
 
     function githubErr(status) {
-      if (status === 401) return "Token was rejected.";
-      if (status === 403) return "Access denied. Check token permissions or SSO authorize.";
-      if (status === 404) return "Repo or file not found. Check username, repo, and token access.";
-      return "GitHub request failed (" + status + ").";
+      if (status === 401) return "Bad token.";
+      if (status === 403) return "Access denied.";
+      if (status === 404) return "Not found in web-hub. Check username, files, token.";
+      return "GitHub error (" + status + ").";
     }
 
     function utf8ToB64(text) {
@@ -310,9 +310,8 @@
 
     function preparePin() {
       const has = !!localStorage.getItem(PIN_HASH);
-      document.getElementById("pinTitle").textContent = has ? "Enter PIN" : "Set a PIN";
+      document.getElementById("pinTitle").textContent = has ? "Enter PIN" : "Set PIN";
       document.getElementById("pin2").hidden = has;
-      document.getElementById("pin2Lab").hidden = has;
       document.getElementById("pin2").value = "";
     }
 
@@ -320,12 +319,12 @@
       const pin = document.getElementById("pin").value;
       const err = document.getElementById("pinErr");
       err.textContent = "";
-      if (!pin) { err.textContent = "Enter a PIN."; return; }
+      if (!pin) { err.textContent = "Enter PIN."; return; }
 
       const existing = localStorage.getItem(PIN_HASH);
       if (!existing) {
         const again = document.getElementById("pin2").value;
-        if (pin !== again) { err.textContent = "PINs do not match."; return; }
+        if (pin !== again) { err.textContent = "PINs differ."; return; }
         const salt = randomSalt();
         const hash = await sha256hex(pin + salt);
         localStorage.setItem(PIN_SALT, salt);
@@ -353,14 +352,13 @@
       const btn = document.getElementById("ghGo");
       err.textContent = "";
       const user = document.getElementById("ghUser").value.trim();
-      const repo = document.getElementById("ghRepo").value.trim();
       const token = document.getElementById("ghToken").value;
-      if (!user || !repo || !token) {
-        err.textContent = "Username, repo, and token are required.";
+      if (!user || !token) {
+        err.textContent = "Both fields required.";
         return;
       }
       session.user = user;
-      session.repo = repo;
+      session.repo = PRIVATE_REPO;
       session.token = token;
       session.branch = "main";
       session.path = "learning-tracker.json";
@@ -368,8 +366,8 @@
       btn.disabled = true;
       try {
         const [cssFile, jsFile, dataFile] = await Promise.all([
-          githubGet("style.css"),
-          githubGet("app.js"),
+          githubGet("learning-tracker.css"),
+          githubGet("learning-tracker.js"),
           githubGet(session.path)
         ]);
         session.sha = dataFile.sha;
@@ -389,7 +387,7 @@
         injected.push(script);
 
         if (typeof window.startApp !== "function") {
-          throw new Error("app.js loaded but startApp is missing.");
+          throw new Error("learning-tracker.js loaded but startApp is missing.");
         }
         window.startApp({
           path: session.path,
