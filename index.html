@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-store" />
-  <title>trackr</title>
+  <title>trackr.</title>
   <style>
     :root {
       --bg: #f4f3ef;
@@ -115,17 +115,23 @@
       #appHost { padding: 20px 10px 48px; }
       .top strong { font-size: 16px; }
     }
+    label {
+      display: block;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--mute);
+      margin: 12px 2px 6px;
+    }
     input {
-      margin-top: 10px;
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 11px 14px;
       background: var(--bg);
       color: var(--ink);
       font: inherit;
       outline: none;
-      text-align: center;
       transition: border-color .15s, box-shadow .15s;
     }
     input::placeholder { color: var(--mute); }
@@ -167,6 +173,7 @@
       margin-bottom: 18px;
     }
     .top strong { font-size: 17px; letter-spacing: -.01em; }
+    .top strong::after { content: "."; color: var(--acc2); }
     .top button.ghost { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
   </style>
 </head>
@@ -178,8 +185,10 @@
       <div class="ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
       <h1 id="pinTitle">PIN</h1>
       <p class="sub" id="pinSub">Enter your PIN to continue.</p>
-      <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" />
-      <input id="pin2" type="password" inputmode="numeric" autocomplete="off" placeholder="Confirm PIN" />
+      <label for="pin">PIN</label>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" />
+      <label for="pin2" id="pin2Lab">Confirm PIN</label>
+      <input id="pin2" type="password" inputmode="numeric" autocomplete="off" />
       <p class="err" id="pinErr"></p>
       <div class="row">
         <button type="button" id="pinGo">Continue</button>
@@ -190,8 +199,10 @@
       <div class="ico"><svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></div>
       <h1>Connect GitHub</h1>
       <p class="sub">Loads your tracker from the private web-hub repo.</p>
-      <input id="ghUser" type="text" autocomplete="off" spellcheck="false" placeholder="Username" />
-      <input id="ghToken" type="password" autocomplete="off" placeholder="Token" />
+      <label for="ghUser">Username</label>
+      <input id="ghUser" type="text" autocomplete="off" spellcheck="false" />
+      <label for="ghToken">Token</label>
+      <input id="ghToken" type="password" autocomplete="off" />
       <p class="err" id="ghErr"></p>
       <div class="row">
         <button type="button" class="ghost" id="backPin">Back</button>
@@ -400,6 +411,7 @@
         ? "Enter your PIN to continue."
         : "Create a PIN to protect this device.";
       document.getElementById("pin2").hidden = has;
+      document.getElementById("pin2Lab").hidden = has;
       document.getElementById("pin2").value = "";
     }
 
@@ -515,5 +527,5 @@
     preparePin();
     showLock("pin");
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2d3d5d73eacc508',t:'MTc4NzA4NjY5Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
