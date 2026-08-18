@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <title>Unlock</title>
+  <style>
+    :root {
+      --bg: #f4f3ef;
+      --card: #fff;
+      --ink: #1c1c1c;
+      --mute: #6e6b64;
+      --line: #e2e0d8;
+      --err: #8c3a28;
+    }
+    html[data-theme="dark"] {
+      --bg: #141414;
+      --card: #1d1d1d;
+      --ink: #eeeae3;
+      --mute: #9a958b;
+      --line: #2e2e2c;
+      --err: #e07a6a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 24px;
+    }
+    .card {
+      width: min(420px, 100%);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 28px 24px 22px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+    .note { color: var(--mute); font-size: 13px; margin-bottom: 18px; }
+    label { display: block; font-size: 12px; color: var(--mute); margin: 12px 0 5px; }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: var(--bg);
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+    input:focus { border-color: var(--ink); }
+    .row { display: flex; gap: 8px; margin-top: 18px; }
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: 8px;
+      padding: 9px 14px;
+    }
+    button.ghost { background: transparent; color: var(--ink); }
+    .err { color: var(--err); font-size: 13px; min-height: 1.2em; margin-top: 10px; }
+    .scope {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--mute);
+      font-size: 12px;
+    }
+    #appHost { display: none; width: min(860px, 100%); }
+    #appHost.on { display: block; }
+    body.app-on { place-items: start center; padding-top: 28px; }
+    #lock { width: 100%; }
+    #lock.off { display: none; }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .placeholder {
+      background: var(--card);
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 28px;
+    }
+  </style>
+</head>
+<body>
+  <div id="lock">
+    <div class="card" id="pinCard">
+      <h1 id="pinTitle">Set a PIN</h1>
+      <p class="note" id="pinNote">This PIN only blocks casual use on this device. It does not protect the GitHub token and does not help if someone can read this browser’s storage.</p>
+      <label for="pin">PIN</label>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" />
+      <label for="pin2" id="pin2Lab">Confirm PIN</label>
+      <input id="pin2" type="password" inputmode="numeric" autocomplete="off" />
+      <p class="err" id="pinErr"></p>
+      <div class="row">
+        <button type="button" id="pinGo">Continue</button>
+      </div>
+    </div>
+
+    <div class="card" id="ghCard" hidden>
+      <h1>GitHub</h1>
+      <p class="note">Asked every visit. Nothing here is saved in the browser. Token is held in memory for this session only.</p>
+      <label for="ghUser">GitHub username</label>
+      <input id="ghUser" type="text" autocomplete="off" spellcheck="false" />
+      <label for="ghRepo">Private repo name</label>
+      <input id="ghRepo" type="text" autocomplete="off" spellcheck="false" />
+      <label for="ghToken">Fine-grained personal access token</label>
+      <input id="ghToken" type="password" autocomplete="off" />
+      <p class="err" id="ghErr"></p>
+      <div class="row">
+        <button type="button" class="ghost" id="backPin">Back</button>
+        <button type="button" id="ghGo">Unlock</button>
+      </div>
+      <p class="scope">Use a fine-grained token on only this private repo. Permission: Contents — Read and write. Expire it (about 90 days) and rotate it.</p>
+    </div>
+  </div>
+
+  <div id="appHost">
+    <div class="top">
+      <strong>Learning tracker</strong>
+      <button type="button" class="ghost" id="logout">Log out</button>
+    </div>
+    <div id="appRoot"></div>
+  </div>
+
+  <script>
+    const PIN_SALT = "pinSaltV1";
+    const PIN_HASH = "pinHashV1";
+    const IDLE_MS = 15 * 60 * 1000;
+
+    const session = {
+      user: null,
+      repo: null,
+      token: null,
+      branch: "main",
+      path: "learning-tracker.json",
+      sha: null
+    };
+
+    const injected = [];
+    let idleTimer = null;
+
+    function clearSession() {
+      session.user = null;
+      session.repo = null;
+      session.token = null;
+      session.branch = "main";
+      session.path = "learning-tracker.json";
+      session.sha = null;
+    }
+
+    function unloadApp() {
+      if (typeof window.stopApp === "function") {
+        try { window.stopApp(); } catch (_) {}
+      }
+      injected.forEach(n => n.remove());
+      injected.length = 0;
+      window.startApp = undefined;
+      window.stopApp = undefined;
+      const root = document.getElementById("appRoot");
+      if (root) root.replaceChildren();
+    }
+
+    function showLock(which) {
+      document.body.classList.remove("app-on");
+      document.getElementById("appHost").classList.remove("on");
+      document.getElementById("lock").classList.remove("off");
+      document.getElementById("pinCard").hidden = which !== "pin";
+      document.getElementById("ghCard").hidden = which !== "gh";
+    }
+
+    function showApp() {
+      document.body.classList.add("app-on");
+      document.getElementById("lock").classList.add("off");
+      document.getElementById("appHost").classList.add("on");
+      document.getElementById("ghToken").value = "";
+      bumpIdle();
+    }
+
+    function logout() {
+      unloadApp();
+      clearSession();
+      stopIdle();
+      document.getElementById("ghUser").value = "";
+      document.getElementById("ghRepo").value = "";
+      document.getElementById("ghToken").value = "";
+      document.getElementById("ghErr").textContent = "";
+      document.getElementById("pin").value = "";
+      document.getElementById("pinErr").textContent = "";
+      preparePin();
+      showLock("pin");
+    }
+
+    function apiUrl(path) {
+      const segs = String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+      return "https://api.github.com/repos/" +
+        encodeURIComponent(session.user) + "/" +
+        encodeURIComponent(session.repo) +
+        "/contents/" + segs +
+        "?ref=" + encodeURIComponent(session.branch);
+    }
+
+    function b64ToUtf8(b64) {
+      const bin = atob(String(b64).replace(/\n/g, ""));
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    async function githubGet(path) {
+      const res = await fetch(apiUrl(path), {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: "Bearer " + session.token,
+          "X-GitHub-Api-Version": "2022-11-28"
+        }
+      });
+      if (!res.ok) {
+        const err = new Error(githubErr(res.status));
+        err.status = res.status;
+        throw err;
+      }
+      const body = await res.json();
+      return { text: b64ToUtf8(body.content || ""), sha: body.sha, path: body.path };
+    }
+
+    function githubErr(status) {
+      if (status === 401) return "Token was rejected.";
+      if (status === 403) return "Access denied. Check token permissions or SSO authorize.";
+      if (status === 404) return "Repo or file not found. Check username, repo, and token access.";
+      return "GitHub request failed (" + status + ").";
+    }
+
+    function utf8ToB64(text) {
+      const bytes = new TextEncoder().encode(text);
+      let bin = "";
+      bytes.forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+
+    async function githubPut(path, text, sha) {
+      const url = "https://api.github.com/repos/" +
+        encodeURIComponent(session.user) + "/" +
+        encodeURIComponent(session.repo) +
+        "/contents/" + String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: "Bearer " + session.token,
+          "X-GitHub-Api-Version": "2022-11-28",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "Update learning-tracker.json",
+          content: utf8ToB64(text),
+          sha: sha,
+          branch: session.branch
+        })
+      });
+      if (res.status === 409) return { conflict: true };
+      if (!res.ok) throw new Error(githubErr(res.status));
+      const body = await res.json();
+      return { conflict: false, sha: body.content && body.content.sha };
+    }
+
+    async function saveRemote(data) {
+      const text = JSON.stringify(data, null, 2);
+      let result = await githubPut(session.path, text, session.sha);
+      if (result.conflict) {
+        const latest = await githubGet(session.path);
+        session.sha = latest.sha;
+        result = await githubPut(session.path, text, session.sha);
+        if (result.conflict) {
+          throw new Error("Another device changed the file. Log out and unlock again.");
+        }
+        return { sha: result.sha, diverged: true };
+      }
+      return { sha: result.sha, diverged: false };
+    }
+
+    function stopIdle() {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+
+    function bumpIdle() {
+      stopIdle();
+      idleTimer = setTimeout(logout, IDLE_MS);
+    }
+
+    async function sha256hex(text) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function randomSalt() {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function preparePin() {
+      const has = !!localStorage.getItem(PIN_HASH);
+      document.getElementById("pinTitle").textContent = has ? "Enter PIN" : "Set a PIN";
+      document.getElementById("pin2").hidden = has;
+      document.getElementById("pin2Lab").hidden = has;
+      document.getElementById("pin2").value = "";
+    }
+
+    document.getElementById("pinGo").onclick = async () => {
+      const pin = document.getElementById("pin").value;
+      const err = document.getElementById("pinErr");
+      err.textContent = "";
+      if (!pin) { err.textContent = "Enter a PIN."; return; }
+
+      const existing = localStorage.getItem(PIN_HASH);
+      if (!existing) {
+        const again = document.getElementById("pin2").value;
+        if (pin !== again) { err.textContent = "PINs do not match."; return; }
+        const salt = randomSalt();
+        const hash = await sha256hex(pin + salt);
+        localStorage.setItem(PIN_SALT, salt);
+        localStorage.setItem(PIN_HASH, hash);
+        document.getElementById("pin").value = "";
+        document.getElementById("pin2").value = "";
+        showLock("gh");
+        return;
+      }
+
+      const salt = localStorage.getItem(PIN_SALT) || "";
+      const hash = await sha256hex(pin + salt);
+      document.getElementById("pin").value = "";
+      if (hash !== existing) { err.textContent = "Wrong PIN."; return; }
+      showLock("gh");
+    };
+
+    document.getElementById("backPin").onclick = () => {
+      document.getElementById("ghErr").textContent = "";
+      showLock("pin");
+    };
+
+    document.getElementById("ghGo").onclick = async () => {
+      const err = document.getElementById("ghErr");
+      const btn = document.getElementById("ghGo");
+      err.textContent = "";
+      const user = document.getElementById("ghUser").value.trim();
+      const repo = document.getElementById("ghRepo").value.trim();
+      const token = document.getElementById("ghToken").value;
+      if (!user || !repo || !token) {
+        err.textContent = "Username, repo, and token are required.";
+        return;
+      }
+      session.user = user;
+      session.repo = repo;
+      session.token = token;
+      session.branch = "main";
+      session.path = "learning-tracker.json";
+      document.getElementById("ghToken").value = "";
+      btn.disabled = true;
+      try {
+        const [cssFile, jsFile, dataFile] = await Promise.all([
+          githubGet("style.css"),
+          githubGet("app.js"),
+          githubGet(session.path)
+        ]);
+        session.sha = dataFile.sha;
+
+        let data;
+        try { data = JSON.parse(dataFile.text); }
+        catch (_) { throw new Error("Data file is not valid JSON."); }
+
+        const style = document.createElement("style");
+        style.textContent = cssFile.text;
+        document.head.appendChild(style);
+        injected.push(style);
+
+        const script = document.createElement("script");
+        script.textContent = jsFile.text;
+        document.body.appendChild(script);
+        injected.push(script);
+
+        if (typeof window.startApp !== "function") {
+          throw new Error("app.js loaded but startApp is missing.");
+        }
+        window.startApp({
+          path: session.path,
+          data,
+          logout,
+          save: async (next) => {
+            const out = await saveRemote(next);
+            if (out.sha) session.sha = out.sha;
+            if (out.diverged) {
+              throw new Error("Saved, but another device had edited the file. Check your latest items.");
+            }
+          }
+        });
+        showApp();
+      } catch (e) {
+        unloadApp();
+        clearSession();
+        err.textContent = e.message || "Could not load the private app.";
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    document.getElementById("logout").onclick = logout;
+    ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => {
+      if (session.token) bumpIdle();
+    }));
+    window.addEventListener("pagehide", clearSession);
+    window.addEventListener("beforeunload", clearSession);
+
+    preparePin();
+    showLock("pin");
+  </script>
+</body>
+</html>
