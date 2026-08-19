@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-store" />
+  <meta name="description" content="trackr. — a private personal tracker for your daily tasks, study topics and goals. Your data lives in your own GitHub repo." />
   <title>trackr.</title>
   <style>
     :root {
@@ -28,6 +29,8 @@
     [hidden] { display: none !important; }
     body {
       min-height: 100vh;
+      min-height: 100svh;
+      -webkit-tap-highlight-color: transparent;
       font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
       color: var(--ink);
       background:
@@ -109,12 +112,23 @@
     }
     .brand::after { content: "."; color: var(--acc2); }
     @media (max-width: 480px) {
-      #lock { padding: 16px; }
+      #lock {
+        padding: 16px;
+        padding-top: calc(16px + env(safe-area-inset-top));
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      }
       .card { padding: 24px 18px 20px; border-radius: 18px; }
-      .brand { top: 16px; left: 16px; font-size: 18px; }
-      .theme-toggle { top: 12px; right: 12px; width: 36px; height: 36px; }
-      #appHost { padding: 20px 10px 48px; }
+      .brand { top: calc(14px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); font-size: 18px; }
+      .theme-toggle { top: calc(10px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); width: 38px; height: 38px; }
+      #appHost {
+        padding: 20px 12px 48px;
+        padding-left: calc(12px + env(safe-area-inset-left));
+        padding-right: calc(12px + env(safe-area-inset-right));
+        padding-bottom: calc(48px + env(safe-area-inset-bottom));
+      }
       .top strong { font-size: 16px; }
+      input { font-size: 16px; }
+      button { padding: 13px 16px; }
     }
     label {
       display: block;
@@ -181,7 +195,7 @@
 <body>
   <div id="lock">
     <div class="brand">trackr</div>
-    <button type="button" class="theme-toggle" id="lockTheme" title="Theme">☾</button>
+    <button type="button" class="theme-toggle" id="lockTheme" title="Theme" aria-label="Toggle theme"></button>
     <div class="card" id="pinCard">
       <div class="ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
       <h1 id="pinTitle">PIN</h1>
@@ -194,6 +208,7 @@
       <div class="row">
         <button type="button" id="pinGo">Continue</button>
       </div>
+      <p class="hint">Track your daily tasks, study &amp; goals &mdash; all in one private place.</p>
     </div>
 
     <div class="card" id="ghCard" hidden>
@@ -223,13 +238,16 @@
 
   <script>
     const THEME_KEY = "uiThemeV1";
+    const ICO_SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+    const ICO_MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
     function setTheme(t) {
       document.documentElement.setAttribute("data-theme", t);
       try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
       const b = document.getElementById("lockTheme");
-      if (b) b.textContent = t === "dark" ? "\u2600" : "\u263E";
+      if (b) b.innerHTML = t === "dark" ? ICO_SUN : ICO_MOON;
     }
 
+    const USER_KEY = "ghUserV1";
     const PIN_SALT = "pinSaltV1";
     const PIN_HASH = "pinHashV1";
     const IDLE_MS = 15 * 60 * 1000;
@@ -288,7 +306,7 @@
       unloadApp();
       clearSession();
       stopIdle();
-      document.getElementById("ghUser").value = "";
+      document.getElementById("ghUser").value = localStorage.getItem(USER_KEY) || "";
       document.getElementById("ghToken").value = "";
       document.getElementById("ghErr").textContent = "";
       document.getElementById("pin").value = "";
@@ -490,6 +508,7 @@
         if (typeof window.startApp !== "function") {
           throw new Error("learning-tracker.js loaded but startApp is missing.");
         }
+        try { localStorage.setItem(USER_KEY, user); } catch (_) {}
         window.startApp({
           path: session.path,
           data,
@@ -525,8 +544,10 @@
     };
     setTheme(localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light");
 
+    try { document.getElementById("ghUser").value = localStorage.getItem(USER_KEY) || ""; } catch (_) {}
+
     preparePin();
     showLock("pin");
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2d3dd73e8dd0fac',t:'MTc4NzA4NzAwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2d7a6406b70cd03',t:'MTc4NzEyNjY4Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
