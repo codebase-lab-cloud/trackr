@@ -114,10 +114,10 @@
     .theme-toggle:hover { background: rgba(255, 255, 255, .22); filter: none; }
     .brand {
       position: fixed;
-      top: 22px;
+      top: 20px;
       left: 22px;
       z-index: 10000;
-      font-size: 20px;
+      font-size: 28px;
       font-weight: 700;
       letter-spacing: -.02em;
       color: #fff;
@@ -131,7 +131,7 @@
         padding-bottom: calc(16px + env(safe-area-inset-bottom));
       }
       .card { padding: 24px 18px 20px; border-radius: 18px; }
-      .brand { top: calc(14px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); font-size: 18px; }
+      .brand { top: calc(12px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); font-size: 24px; }
       .theme-toggle { top: calc(10px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); width: 38px; height: 38px; }
       #appHost {
         padding: 20px 12px 48px;
@@ -139,7 +139,7 @@
         padding-right: calc(12px + env(safe-area-inset-right));
         padding-bottom: calc(48px + env(safe-area-inset-bottom));
       }
-      .top strong { font-size: 16px; }
+      .top strong { font-size: 19px; }
       input { font-size: 16px; }
       button { padding: 13px 16px; }
     }
@@ -200,9 +200,9 @@
       align-items: center;
       margin-bottom: 18px;
     }
-    .top strong { font-size: 17px; letter-spacing: -.01em; }
+    .top strong { font-size: 22px; letter-spacing: -.02em; }
     .top strong::after { content: "."; color: var(--acc2); }
-    .top button.ghost { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
+    .top button.ghost { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 12px; flex: 0 0 auto; }
   </style>
 </head>
 <body>
@@ -244,7 +244,7 @@
   <div id="appHost">
     <div class="top">
       <strong>trackr</strong>
-      <button type="button" class="ghost" id="logout">Log out</button>
+      <button type="button" class="ghost" id="logout" title="Log out" aria-label="Log out"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     </div>
     <div id="appRoot"></div>
   </div>
@@ -564,5 +564,5 @@
     preparePin();
     showLock("pin");
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2d8949cc9da298c',t:'MTc4NzEzNjQ1MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
