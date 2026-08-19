@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-store" />
+  <meta name="theme-color" id="metaTheme" content="#f4f3ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="trackr." />
   <meta name="description" content="trackr. — a private personal tracker for your daily tasks, study topics and goals. Your data lives in your own GitHub repo." />
   <title>trackr.</title>
   <style>
@@ -27,6 +32,12 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { overflow-x: hidden; width: 100%; }
+    html {
+      background:
+        radial-gradient(640px 420px at 12% 8%, rgba(166, 58, 36, .16), transparent 60%),
+        radial-gradient(560px 400px at 88% 92%, rgba(207, 107, 63, .15), transparent 60%),
+        var(--bg);
+    }
     [hidden] { display: none !important; }
     body {
       min-height: 100vh;
@@ -34,11 +45,7 @@
       -webkit-tap-highlight-color: transparent;
       font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
       color: var(--ink);
-      background:
-        radial-gradient(640px 420px at 12% 8%, rgba(166, 58, 36, .16), transparent 60%),
-        radial-gradient(560px 400px at 88% 92%, rgba(207, 107, 63, .15), transparent 60%),
-        var(--bg);
-      background-attachment: fixed;
+      background: transparent;
     }
     #lock {
       position: fixed;
@@ -246,6 +253,8 @@
       try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
       const b = document.getElementById("lockTheme");
       if (b) b.innerHTML = t === "dark" ? ICO_SUN : ICO_MOON;
+      const m = document.getElementById("metaTheme");
+      if (m) m.setAttribute("content", t === "dark" ? "#121214" : "#f4f3ef");
     }
 
     const USER_KEY = "ghUserV1";
