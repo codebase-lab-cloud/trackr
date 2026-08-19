@@ -33,6 +33,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { overflow-x: hidden; width: 100%; }
     html {
+      min-height: 100%;
       background:
         radial-gradient(640px 420px at 12% 8%, rgba(166, 58, 36, .16), transparent 60%),
         radial-gradient(560px 400px at 88% 92%, rgba(207, 107, 63, .15), transparent 60%),
@@ -41,15 +42,19 @@
     [hidden] { display: none !important; }
     body {
       min-height: 100vh;
-      min-height: 100svh;
+      min-height: 100dvh;
       -webkit-tap-highlight-color: transparent;
       font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
       color: var(--ink);
       background: transparent;
     }
+    @supports (-webkit-touch-callout: none) {
+      body { min-height: -webkit-fill-available; }
+    }
     #lock {
       position: fixed;
       inset: 0;
+      height: 100dvh;
       z-index: 9999;
       display: grid;
       place-items: center;
@@ -559,5 +564,5 @@
     preparePin();
     showLock("pin");
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2d8949cc9da298c',t:'MTc4NzEzNjQ1MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
