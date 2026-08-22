@@ -92,6 +92,21 @@
     h1 { font-size: 18px; font-weight: 650; margin-bottom: 4px; letter-spacing: -.01em; }
     .sub { color: var(--mute); font-size: 13px; margin-bottom: 14px; }
     .hint { color: var(--mute); font-size: 11.5px; margin-top: 14px; }
+    .linkish {
+      background: none;
+      border: 0;
+      padding: 0;
+      margin-top: 14px;
+      flex: 0 0 auto;
+      width: auto;
+      color: var(--acc);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+    .linkish:hover { color: var(--acc2); filter: none; }
     .theme-toggle {
       position: fixed;
       top: 18px;
@@ -221,6 +236,7 @@
       <div class="row">
         <button type="button" id="pinGo">Continue</button>
       </div>
+      <button type="button" class="linkish" id="pinReset" hidden>Forgot PIN? Reset</button>
       <p class="hint">Track your daily tasks, study &amp; goals &mdash; all in one private place.</p>
     </div>
 
@@ -446,6 +462,7 @@
         : "Create a PIN to protect this device.";
       document.getElementById("pin2").hidden = has;
       document.getElementById("pin2Lab").hidden = has;
+      document.getElementById("pinReset").hidden = !has;
       document.getElementById("pin2").value = "";
     }
 
@@ -474,6 +491,15 @@
       document.getElementById("pin").value = "";
       if (hash !== existing) { err.textContent = "Wrong PIN."; return; }
       showLock("gh");
+    };
+
+    document.getElementById("pinReset").onclick = () => {
+      if (!confirm("Reset PIN? You'll set a new one now. Your data is safe - it lives in GitHub.")) return;
+      localStorage.removeItem(PIN_HASH);
+      localStorage.removeItem(PIN_SALT);
+      document.getElementById("pin").value = "";
+      document.getElementById("pinErr").textContent = "";
+      preparePin();
     };
 
     document.getElementById("backPin").onclick = () => {
