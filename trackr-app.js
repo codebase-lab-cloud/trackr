@@ -45,9 +45,10 @@ const ICONS = {
   settings:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/>',
   lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-  moon:'<path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.7 8.7 0 1 0 20.5 15.5Z"/>',
+  themeDark:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   pin:'<path d="m15 3 6 6-3 1-4 4v3l-2 2-7-7 2-2h3l4-4 1-3Z"/><path d="m9 16-5 5"/>',
+  pinFilled:'<path d="m15 3 6 6-3 1-4 4v3l-2 2-7-7 2-2h3l4-4 1-3Z" fill="currentColor"/><path d="m9 16-5 5"/>',
   archive:'<path d="M4 7h16v13H4zM3 3h18v4H3zM9 11h6"/>',
   more:'<circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/>',
   back:'<path d="m15 18-6-6 6-6"/>',
@@ -71,10 +72,10 @@ function applyTheme(theme,save=true){
   const value=theme==='dark'?'dark':'light';document.documentElement.dataset.theme=value;
   if(save)localStorage.setItem('trackr-theme',value);
   const meta=$('meta[name="theme-color"]');if(meta)meta.content=value==='dark'?'#171218':'#3f0e40';
-  $$('[data-theme-icon]').forEach(el=>{el.innerHTML=icon(value==='dark'?'sun':'moon');});
+  $$('[data-theme-icon]').forEach(el=>{el.innerHTML=icon(value==='dark'?'sun':'themeDark');});
 }
 function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');}
-function initializeTheme(){const saved=localStorage.getItem('trackr-theme');applyTheme(saved||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),false);}
+function initializeTheme(){const saved=localStorage.getItem('trackr-theme');applyTheme(saved==='light'?'light':'dark',false);}
 
 function toast(message, ms=2300){ const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),ms); }
 function setSyncStatus(kind,label){ const el=$('#syncIndicator');if(!el)return;el.className=`sync-indicator ${kind||''}`;const text=$('span',el);if(text)text.textContent=label; }
@@ -168,6 +169,7 @@ function lockApp(){
 function boot(){
   initializeTheme();hydrateStaticIcons();applyTheme(document.documentElement.dataset.theme,false);
   try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');if(saved){$('#githubOwner').value=saved.owner||'';$('#githubRepo').value=saved.repo||'';}}catch{localStorage.removeItem(CONFIG_KEY)}
+  if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./trackr-service-worker.js').catch(error=>console.warn('Service worker registration failed',error)),{once:true});
 }
 
 function chatMessages(chatId){ return state.messages.filter(m=>m.chatId===chatId).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)); }
@@ -204,7 +206,7 @@ function renderChatSidebar(){
   $('#sidebarHeader').innerHTML=sidebarHeader('Chats','Your private conversations','new-chat','New conversation','Search conversations');
   const visible=state.chats.filter(c=>showArchived?c.archived:!c.archived).filter(c=>c.name.toLowerCase().includes(searchText.toLowerCase())).sort((a,b)=>(Number(b.pinned)-Number(a.pinned))||(new Date(b.updatedAt)-new Date(a.updatedAt)));
   const pinned=visible.filter(c=>c.pinned), recent=visible.filter(c=>!c.pinned);
-  const row=c=>{const last=lastMessage(c.id);const pv=last?(last.kind==='voice'?'Voice note':preview(last.text)):'No entries yet';return `<button class="side-row ${c.id===state.activeChatId?'active':''}" data-action="select-chat" data-id="${c.id}"><span class="side-avatar" style="${avatarStyle(c)}">${avatarInner(c)}</span><span class="side-copy"><span class="side-name">${esc(c.name)} ${c.pinned?`<span class="side-pin" title="Pinned">${icon('pin')}</span>`:''}</span><span class="side-preview">${esc(pv)}</span></span><span class="side-time">${last?esc(lastUpdatedLabel(last.createdAt)):''}</span></button>`};
+  const row=c=>{const last=lastMessage(c.id);const pv=last?(last.kind==='voice'?'Voice note':preview(last.text)):'No entries yet';return `<button class="side-row ${c.id===state.activeChatId?'active':''}" data-action="select-chat" data-id="${c.id}"><span class="side-avatar" style="${avatarStyle(c)}">${avatarInner(c)}</span><span class="side-copy"><span class="side-name">${esc(c.name)} ${c.pinned?`<span class="side-pin" title="Pinned">${icon('pinFilled')}</span>`:''}</span><span class="side-preview">${esc(pv)}</span></span><span class="side-time">${last?esc(lastUpdatedLabel(last.createdAt)):''}</span></button>`};
   let html=''; if(pinned.length) html+=`<div class="side-section-title">Pinned</div>${pinned.map(row).join('')}`; if(recent.length) html+=`<div class="side-section-title">${showArchived?'Archived':'Recent'}</div>${recent.map(row).join('')}`;
   if(!visible.length) html=`<div class="empty-side">${searchText?'No conversations match your search.':showArchived?'No archived conversations.':'Create a conversation for groceries, daily tasks, work notes, or anything else.'}</div>`;
   $('#sidebarContent').innerHTML=html;
@@ -240,7 +242,7 @@ function renderChatContent(){
   let lastDay='',html='';
   for(const m of messages){const dk=dayKey(m.createdAt);if(dk!==lastDay){html+=`<div class="date-divider"><span>${esc(localeDate(m.createdAt))}</span></div>`;lastDay=dk;}html+=messageHTML(m);}
   if(!messages.length) html=`<div class="empty-main"><div class="empty-card"><div class="empty-illustration">${icon(messageSearch?'search':'edit')}</div><h2>${messageSearch?'No matching entries':'Start writing'}</h2><p>${messageSearch?'Try a different search.':'This conversation is yours. Add a thought, list, task, or voice note.'}</p></div></div>`;
-  content.innerHTML=`<header class="content-header"><button class="icon-btn mobile-back" data-action="mobile-back" aria-label="Back">${icon('back')}</button>${headerAvatar(chat)}<div class="content-heading"><h2>${esc(chat.name)} ${chat.pinned?`<span class="header-pin" title="Pinned">${icon('pin')}</span>`:''}</h2><p>${chat.archived?'Archived conversation':'Personal conversation'}${messageSearch?` · Searching “${esc(messageSearch)}”`:''}</p></div><div class="content-actions"><button class="icon-btn optional-mobile" data-action="search-messages" title="Search conversation" aria-label="Search conversation">${icon('search')}</button><button class="icon-btn hide-narrow ${chat.pinned?'active-pin':''}" data-action="pin-chat" data-id="${chat.id}" title="${chat.pinned?'Unpin':'Pin'}" aria-label="${chat.pinned?'Unpin':'Pin'} conversation">${icon('pin')}</button><button class="icon-btn" data-action="chat-menu" data-id="${chat.id}" title="Conversation options" aria-label="Conversation options">${icon('more')}</button></div></header><div class="content-scroll" id="messageScroll"><div class="message-list">${html}</div></div>${recording?recordingHTML():composerHTML()}`;
+  content.innerHTML=`<header class="content-header"><button class="icon-btn mobile-back" data-action="mobile-back" aria-label="Back">${icon('back')}</button>${headerAvatar(chat)}<div class="content-heading"><h2>${esc(chat.name)} ${chat.pinned?`<span class="header-pin" title="Pinned">${icon('pinFilled')}</span>`:''}</h2><p>${chat.archived?'Archived conversation':'Personal conversation'}${messageSearch?` · Searching “${esc(messageSearch)}”`:''}</p></div><div class="content-actions"><button class="icon-btn optional-mobile" data-action="search-messages" title="Search conversation" aria-label="Search conversation">${icon('search')}</button><button class="icon-btn hide-narrow ${chat.pinned?'active-pin':''}" data-action="pin-chat" data-id="${chat.id}" title="${chat.pinned?'Unpin':'Pin'}" aria-label="${chat.pinned?'Unpin':'Pin'} conversation">${icon(chat.pinned?'pinFilled':'pin')}</button><button class="icon-btn" data-action="chat-menu" data-id="${chat.id}" title="Conversation options" aria-label="Conversation options">${icon('more')}</button></div></header><div class="content-scroll" id="messageScroll"><div class="message-list">${html}</div></div>${recording?recordingHTML():composerHTML()}`;
   bindComposer();
   if(!messageSearch) requestAnimationFrame(()=>{const scroller=$('#messageScroll');if(scroller)scroller.scrollTop=scroller.scrollHeight;});
 }

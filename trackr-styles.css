@@ -194,3 +194,26 @@ html[data-theme="dark"] .privacy-line{color:#aaa1ab;background:none}
   .composer-box{border-radius:12px}
   .toast{bottom:calc(70px + var(--safe-bottom))}
 }
+
+/* Glass-selected conversations and filled pin state */
+.side-row{position:relative;overflow:hidden;border:1px solid transparent}
+.side-row.active{
+  background:linear-gradient(135deg,rgba(255,255,255,.24),rgba(255,255,255,.075));
+  border-color:rgba(255,255,255,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 24px rgba(19,4,20,.2);
+  backdrop-filter:blur(14px) saturate(135%);
+  -webkit-backdrop-filter:blur(14px) saturate(135%);
+}
+.side-row.active:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 15%,rgba(255,255,255,.09) 48%,transparent 72%);transform:translateX(-35%)}
+.side-row.active .side-preview,.side-row.active .side-time{color:#eadfeb}
+.icon-btn.active-pin{background:transparent!important;color:#b987bf;box-shadow:none}
+.icon-btn.active-pin:hover{background:rgba(185,135,191,.12)!important}
+
+/* Ensure the iPhone home-indicator area is painted, never exposed as a gap. */
+@media(max-width:760px){
+  html,body,.app-shell{background:#171218!important}
+  .workspace-content{background:var(--surface)!important}
+  .mobile-nav{bottom:-2px;height:calc(62px + var(--safe-bottom));padding-bottom:max(4px,var(--safe-bottom));background:var(--nav-surface)!important}
+  .mobile-nav:after{content:"";position:absolute;z-index:-1;left:0;right:0;bottom:calc(-1 * var(--safe-bottom));height:calc(var(--safe-bottom) + 4px);background:var(--nav-surface)}
+  .workspace-sidebar,.workspace-content{bottom:calc(60px + var(--safe-bottom))}
+}
