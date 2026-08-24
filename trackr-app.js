@@ -22,6 +22,7 @@ let showArchived = false;
 let searchText = '';
 let messageSearch = '';
 let currentMode = 'chats';
+let keyboardTimer = null;
 
 const uid = prefix => `${prefix}_${crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2)}`;
 const now = () => new Date().toISOString();
@@ -79,6 +80,16 @@ function initializeTheme(){const saved=localStorage.getItem('trackr-theme');appl
 function syncMobileViewport(){
   const viewport=window.visualViewport;const height=Math.round(viewport?.height||window.innerHeight);
   document.documentElement.style.setProperty('--trackr-viewport-height',`${height}px`);
+}
+function setComposerKeyboard(open){
+  clearTimeout(keyboardTimer);
+  const apply=()=>{
+    const app=$('#app');if(!app)return;
+    app.classList.toggle('keyboard-open',open);syncMobileViewport();
+    if(open){const scroller=$('#messageScroll');if(scroller)scroller.scrollTop=scroller.scrollHeight;}
+  };
+  if(open){apply();keyboardTimer=setTimeout(()=>{if(document.activeElement?.id==='composerInput')apply();},280);}
+  else keyboardTimer=setTimeout(apply,240);
 }
 
 function toast(message, ms=2300){ const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),ms); }
@@ -268,6 +279,8 @@ function recordingHTML(){ return `<footer class="message-composer"><div class="r
 function bindComposer(){
   const input=$('#composerInput'),send=$('#sendText'); if(!input||!send)return;
   const update=()=>{send.disabled=!input.value.trim();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,130)+'px'};
+  input.addEventListener('focus',()=>setComposerKeyboard(true));
+  input.addEventListener('blur',()=>setComposerKeyboard(false));
   input.addEventListener('input',update); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTextMessage();}}); send.onclick=sendTextMessage;
 }
 async function sendTextMessage(){

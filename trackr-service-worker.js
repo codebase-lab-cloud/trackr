@@ -1,4 +1,4 @@
-const CACHE = 'trackr-static-v7';
+const CACHE = 'trackr-static-v9';
 const APP_FILES = [
   './',
   './index.html',
