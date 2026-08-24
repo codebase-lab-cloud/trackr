@@ -1,0 +1,33 @@
+{
+  "id": "./",
+  "name": "trackr.",
+  "short_name": "trackr.",
+  "description": "Private conversations, voice notes and flexible trackers synchronized with GitHub.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#171218",
+  "theme_color": "#171218",
+  "icons": [
+    {
+      "src": "./trackr-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./trackr-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./trackr-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
