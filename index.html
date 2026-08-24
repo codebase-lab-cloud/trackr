@@ -1,594 +1,94 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta http-equiv="Cache-Control" content="no-store" />
-  <meta name="theme-color" id="metaTheme" content="#f4f3ef" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="trackr." />
-  <meta name="description" content="trackr. — a private personal tracker for your daily tasks, study topics and goals. Your data lives in your own GitHub repo." />
-  <title>trackr.</title>
-  <style>
-    :root {
-      --bg: #f4f3ef;
-      --card: #ffffff;
-      --ink: #1c1c1c;
-      --mute: #6e6b64;
-      --line: #e2e0d8;
-      --err: #c0442c;
-      --acc: #a63a24;
-      --acc2: #cf6b3f;
-    }
-    html[data-theme="dark"] {
-      --bg: #121214;
-      --card: #1c1c20;
-      --ink: #eeeae3;
-      --mute: #9a958b;
-      --line: #2c2c31;
-      --err: #e07a6a;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { overflow-x: hidden; width: 100%; }
-    html {
-      min-height: 100%;
-      background:
-        radial-gradient(640px 420px at 12% 8%, rgba(166, 58, 36, .16), transparent 60%),
-        radial-gradient(560px 400px at 88% 92%, rgba(207, 107, 63, .15), transparent 60%),
-        var(--bg);
-    }
-    [hidden] { display: none !important; }
-    body {
-      min-height: 100vh;
-      min-height: 100dvh;
-      -webkit-tap-highlight-color: transparent;
-      font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
-      color: var(--ink);
-      background: transparent;
-    }
-    @supports (-webkit-touch-callout: none) {
-      body { min-height: -webkit-fill-available; }
-    }
-    #lock {
-      position: fixed;
-      inset: 0;
-      height: 100dvh;
-      z-index: 9999;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: rgba(18, 16, 24, 0.45);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-    #lock.off { display: none; }
-    .card {
-      width: min(340px, 100%);
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      padding: 30px 26px 24px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, .30);
-      text-align: center;
-      animation: pop .3s ease;
-    }
-    @keyframes pop {
-      from { opacity: 0; transform: translateY(14px) scale(.98); }
-      to { opacity: 1; transform: none; }
-    }
-    .ico {
-      width: 54px;
-      height: 54px;
-      margin: 0 auto 14px;
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      background: linear-gradient(135deg, var(--acc), var(--acc2));
-      box-shadow: 0 10px 24px rgba(166, 58, 36, .35);
-    }
-    h1 { font-size: 18px; font-weight: 650; margin-bottom: 4px; letter-spacing: -.01em; }
-    .sub { color: var(--mute); font-size: 13px; margin-bottom: 14px; }
-    .hint { color: var(--mute); font-size: 11.5px; margin-top: 14px; }
-    .linkish {
-      background: none;
-      border: 0;
-      padding: 0;
-      margin-top: 14px;
-      flex: 0 0 auto;
-      width: auto;
-      color: var(--acc);
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      cursor: pointer;
-    }
-    .linkish:hover { color: var(--acc2); filter: none; }
-    .theme-toggle {
-      position: fixed;
-      top: 18px;
-      right: 18px;
-      z-index: 10000;
-      width: 40px;
-      height: 40px;
-      flex: 0 0 auto;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, .25);
-      background: rgba(255, 255, 255, .12);
-      color: #fff;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      font-size: 16px;
-      display: grid;
-      place-items: center;
-      padding: 0;
-    }
-    .theme-toggle:hover { background: rgba(255, 255, 255, .22); filter: none; }
-    .brand {
-      position: fixed;
-      top: 20px;
-      left: 22px;
-      z-index: 10000;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -.02em;
-      color: #fff;
-      text-shadow: 0 2px 12px rgba(0, 0, 0, .35);
-    }
-    .brand::after { content: "."; color: var(--acc2); }
-    @media (max-width: 480px) {
-      #lock {
-        padding: 16px;
-        padding-top: calc(16px + env(safe-area-inset-top));
-        padding-bottom: calc(16px + env(safe-area-inset-bottom));
-      }
-      .card { padding: 24px 18px 20px; border-radius: 18px; }
-      .brand { top: calc(12px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); font-size: 24px; }
-      .theme-toggle { top: calc(10px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); width: 38px; height: 38px; }
-      #appHost {
-        padding: 20px 12px 48px;
-        padding-left: calc(12px + env(safe-area-inset-left));
-        padding-right: calc(12px + env(safe-area-inset-right));
-        padding-bottom: calc(48px + env(safe-area-inset-bottom));
-      }
-      .top strong { font-size: 19px; }
-      input { font-size: 16px; }
-      button { padding: 13px 16px; }
-    }
-    label {
-      display: block;
-      text-align: left;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--mute);
-      margin: 12px 2px 6px;
-    }
-    input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 11px 14px;
-      background: var(--bg);
-      color: var(--ink);
-      font: inherit;
-      outline: none;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    input::placeholder { color: var(--mute); }
-    input:focus {
-      border-color: var(--acc);
-      box-shadow: 0 0 0 3px rgba(166, 58, 36, .18);
-    }
-    .row { display: flex; gap: 10px; margin-top: 18px; }
-    button {
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      border: 0;
-      flex: 1;
-      color: #fff;
-      background: linear-gradient(135deg, var(--acc), var(--acc2));
-      border-radius: 12px;
-      padding: 12px 16px;
-      transition: filter .15s, transform .1s;
-    }
-    button:hover { filter: brightness(1.08); }
-    button:active { transform: translateY(1px); }
-    button:disabled { opacity: .6; cursor: default; }
-    button.ghost {
-      background: transparent;
-      color: var(--mute);
-      border: 1px solid var(--line);
-      flex: 0 0 auto;
-      font-weight: 500;
-    }
-    button.ghost:hover { color: var(--ink); filter: none; }
-    .err { color: var(--err); font-size: 13px; min-height: 1.2em; margin-top: 12px; }
-    #appHost { display: none; width: min(880px, 100%); margin: 0 auto; padding: 28px 16px 60px; }
-    #appHost.on { display: block; }
-    .top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 18px;
-    }
-    .top strong { font-size: 22px; letter-spacing: -.02em; }
-    .top strong::after { content: "."; color: var(--acc2); }
-    .top button.ghost { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 12px; flex: 0 0 auto; }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#3f0e40">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="trackr.">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="./trackr-icon.png">
+  <title>trackr. — Your private space</title>
+  <link rel="stylesheet" href="./trackr-styles.css">
 </head>
 <body>
-  <div id="lock">
-    <div class="brand">trackr</div>
-    <button type="button" class="theme-toggle" id="lockTheme" title="Theme" aria-label="Toggle theme"></button>
-    <div class="card" id="pinCard">
-      <div class="ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-      <h1 id="pinTitle">PIN</h1>
-      <p class="sub" id="pinSub">Enter your PIN to continue.</p>
-      <label for="pin">PIN</label>
-      <input id="pin" type="password" inputmode="numeric" autocomplete="off" />
-      <label for="pin2" id="pin2Lab">Confirm PIN</label>
-      <input id="pin2" type="password" inputmode="numeric" autocomplete="off" />
-      <p class="err" id="pinErr"></p>
-      <div class="row">
-        <button type="button" id="pinGo">Continue</button>
+  <div id="auth" class="auth-shell">
+    <section class="auth-brand" aria-hidden="true">
+      <div class="auth-brand-inner">
+        <div class="logo-large">Tr.</div>
+        <p class="kicker">YOUR PRIVATE WORKSPACE</p>
+        <h1>Capture thoughts.<br>Build progress.</h1>
+        <p class="auth-copy">Personal conversations and flexible trackers, synchronized through your private GitHub repository.</p>
+        <div class="auth-preview">
+          <span class="preview-dot green"></span><span>Private repository is the shared source of truth</span>
+          <span class="preview-dot violet"></span><span>Works across your iPhone, laptop and browsers</span>
+          <span class="preview-dot blue"></span><span>Your token is kept in memory for this session only</span>
+        </div>
       </div>
-      <button type="button" class="linkish" id="pinReset" hidden>Forgot PIN? Reset</button>
-      <p class="hint">Track your daily tasks, study &amp; goals &mdash; all in one private place.</p>
-    </div>
+    </section>
 
-    <div class="card" id="ghCard" hidden>
-      <div class="ico"><svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></div>
-      <h1>Connect GitHub</h1>
-      <p class="sub">Loads your tracker from the private web-hub repo.</p>
-      <label for="ghUser">Username</label>
-      <input id="ghUser" type="text" autocomplete="off" spellcheck="false" />
-      <label for="ghToken">Token</label>
-      <input id="ghToken" type="password" autocomplete="off" />
-      <p class="err" id="ghErr"></p>
-      <div class="row">
-        <button type="button" class="ghost" id="backPin">Back</button>
-        <button type="button" id="ghGo">Unlock</button>
-      </div>
-      <p class="hint">Fine-grained token &middot; Contents: Read &amp; write &middot; only web-hub</p>
-    </div>
+    <section class="auth-form-wrap">
+      <div class="auth-mobile-logo"><span>Tr.</span> trackr.</div>
+      <form id="githubAuthForm" class="auth-card" autocomplete="off">
+        <div class="auth-icon">⌘</div>
+        <p class="step-label">CONNECT PRIVATE DATA</p>
+        <h2>Connect GitHub</h2>
+        <p class="auth-help">Enter a fine-grained PAT restricted to one private data repository. The token is never saved and is requested again after a refresh, close, or lock.</p>
+        <div class="auth-grid">
+          <div>
+            <label class="field-label" for="githubOwner">GitHub username</label>
+            <input class="auth-input" id="githubOwner" maxlength="80" placeholder="your-username" required autocapitalize="none" spellcheck="false">
+          </div>
+          <div>
+            <label class="field-label" for="githubRepo">Private repository</label>
+            <input class="auth-input" id="githubRepo" maxlength="100" placeholder="trackr-private-data" required autocapitalize="none" spellcheck="false">
+          </div>
+        </div>
+        <p class="fixed-data-note">trackr. will use the <b>main</b> branch and the fixed private data file <b>trackr.json</b>.</p>
+        <label class="field-label" for="githubToken">Fine-grained personal access token</label>
+        <div class="pin-field"><input id="githubToken" type="password" placeholder="github_pat_…" required autocomplete="off" autocapitalize="none" spellcheck="false" data-1p-ignore data-lpignore="true"><button class="reveal-btn" type="button" data-reveal="githubToken" aria-label="Show token">Show</button></div>
+        <div class="token-note"><b>Saved locally:</b> only your GitHub username and private repository name. <b>Not saved:</b> your PAT, which is requested every session.</div>
+        <p id="githubAuthError" class="form-error" role="alert"></p>
+        <button class="btn primary wide" type="submit">Connect and open trackr.</button>
+      </form>
+      <p class="privacy-line">GitHub PAT required every session · No AI · No analytics</p>
+    </section>
   </div>
 
-  <div id="appHost">
-    <div class="top">
-      <strong>trackr</strong>
-      <button type="button" class="ghost" id="logout" title="Log out" aria-label="Log out"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
-    </div>
-    <div id="appRoot"></div>
+  <div id="app" class="app-shell hidden" data-mode="chats">
+    <header class="global-bar">
+      <div class="global-workspace"><span>Tr.</span><b>trackr.</b></div>
+      <button class="global-search" id="globalSearchButton"><span aria-hidden="true">⌕</span><span>Search this workspace</span><kbd>⌘ K</kbd></button>
+      <div class="global-actions"><span class="sync-indicator" id="syncIndicator"><i></i><span>Not connected</span></span><button class="top-icon-btn" id="installHelp" title="Install help">?</button><button class="top-avatar" id="openSettings" title="Settings">ME</button></div>
+    </header>
+
+    <nav class="app-rail" aria-label="Primary navigation">
+      <div class="rail-logo">Tr.</div>
+      <button class="rail-button active" data-nav="chats" aria-label="Chats"><span class="rail-icon">☵</span><small>Chats</small></button>
+      <button class="rail-button" data-nav="trackers" aria-label="Trackers"><span class="rail-icon">▤</span><small>Trackers</small></button>
+      <div class="rail-spacer"></div>
+      <button class="rail-button" data-nav="settings" aria-label="Settings"><span class="rail-icon">⚙</span><small>Settings</small></button>
+      <button class="rail-button" id="lockButton" aria-label="Lock"><span class="rail-icon">⌁</span><small>Lock</small></button>
+    </nav>
+
+    <aside id="sidebar" class="workspace-sidebar">
+      <div id="sidebarHeader"></div>
+      <div id="sidebarContent" class="sidebar-content"></div>
+      <div id="sidebarFooter"></div>
+    </aside>
+
+    <main id="content" class="workspace-content" tabindex="-1"></main>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <button class="mobile-nav-btn active" data-nav="chats"><span>☵</span><small>Chats</small></button>
+      <button class="mobile-nav-btn" data-nav="trackers"><span>▤</span><small>Trackers</small></button>
+      <button class="mobile-nav-btn" data-nav="settings"><span>⚙</span><small>Settings</small></button>
+    </nav>
   </div>
 
-  <script>
-    const THEME_KEY = "uiThemeV1";
-    const ICO_SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
-    const ICO_MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-    function setTheme(t) {
-      document.documentElement.setAttribute("data-theme", t);
-      try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
-      const b = document.getElementById("lockTheme");
-      if (b) b.innerHTML = t === "dark" ? ICO_SUN : ICO_MOON;
-      const m = document.getElementById("metaTheme");
-      if (m) m.setAttribute("content", t === "dark" ? "#121214" : "#f4f3ef");
-    }
-
-    const USER_KEY = "ghUserV1";
-    const PIN_SALT = "pinSaltV1";
-    const PIN_HASH = "pinHashV1";
-    const IDLE_MS = 15 * 60 * 1000;
-    const PRIVATE_REPO = "web-hub";
-
-    const session = {
-      user: null,
-      repo: PRIVATE_REPO,
-      token: null,
-      branch: "main",
-      path: "learning-tracker.json",
-      sha: null
-    };
-
-    const injected = [];
-    let idleTimer = null;
-
-    function clearSession() {
-      session.user = null;
-      session.repo = PRIVATE_REPO;
-      session.token = null;
-      session.branch = "main";
-      session.path = "learning-tracker.json";
-      session.sha = null;
-    }
-
-    function unloadApp() {
-      if (typeof window.stopApp === "function") {
-        try { window.stopApp(); } catch (_) {}
-      }
-      injected.forEach(n => n.remove());
-      injected.length = 0;
-      window.startApp = undefined;
-      window.stopApp = undefined;
-      const root = document.getElementById("appRoot");
-      if (root) root.replaceChildren();
-    }
-
-    function showLock(which) {
-      document.body.classList.remove("app-on");
-      document.getElementById("appHost").classList.remove("on");
-      document.getElementById("lock").classList.remove("off");
-      document.getElementById("pinCard").hidden = which !== "pin";
-      document.getElementById("ghCard").hidden = which !== "gh";
-    }
-
-    function showApp() {
-      document.body.classList.add("app-on");
-      document.getElementById("lock").classList.add("off");
-      document.getElementById("appHost").classList.add("on");
-      document.getElementById("ghToken").value = "";
-      bumpIdle();
-    }
-
-    function logout() {
-      unloadApp();
-      clearSession();
-      stopIdle();
-      document.getElementById("ghUser").value = localStorage.getItem(USER_KEY) || "";
-      document.getElementById("ghToken").value = "";
-      document.getElementById("ghErr").textContent = "";
-      document.getElementById("pin").value = "";
-      document.getElementById("pinErr").textContent = "";
-      preparePin();
-      showLock("pin");
-    }
-
-    function apiUrl(path) {
-      const segs = String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
-      return "https://api.github.com/repos/" +
-        encodeURIComponent(session.user) + "/" +
-        encodeURIComponent(session.repo) +
-        "/contents/" + segs +
-        "?ref=" + encodeURIComponent(session.branch);
-    }
-
-    function b64ToUtf8(b64) {
-      const bin = atob(String(b64).replace(/\n/g, ""));
-      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-      return new TextDecoder().decode(bytes);
-    }
-
-    async function githubGet(path) {
-      const res = await fetch(apiUrl(path), {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: "Bearer " + session.token,
-          "X-GitHub-Api-Version": "2022-11-28"
-        }
-      });
-      if (!res.ok) {
-        const err = new Error(githubErr(res.status));
-        err.status = res.status;
-        throw err;
-      }
-      const body = await res.json();
-      return { text: b64ToUtf8(body.content || ""), sha: body.sha, path: body.path };
-    }
-
-    function githubErr(status) {
-      if (status === 401) return "Bad token.";
-      if (status === 403) return "No write access — token needs Contents: Read and write.";
-      if (status === 404) return "Not found in web-hub. Check username, files, token.";
-      return "GitHub error (" + status + ").";
-    }
-
-    function utf8ToB64(text) {
-      const bytes = new TextEncoder().encode(text);
-      let bin = "";
-      bytes.forEach(b => { bin += String.fromCharCode(b); });
-      return btoa(bin);
-    }
-
-    async function githubPut(path, text, sha) {
-      const url = "https://api.github.com/repos/" +
-        encodeURIComponent(session.user) + "/" +
-        encodeURIComponent(session.repo) +
-        "/contents/" + String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: "Bearer " + session.token,
-          "X-GitHub-Api-Version": "2022-11-28",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: "Update learning-tracker.json",
-          content: utf8ToB64(text),
-          sha: sha,
-          branch: session.branch
-        })
-      });
-      if (res.status === 409) return { conflict: true };
-      if (!res.ok) throw new Error(githubErr(res.status));
-      const body = await res.json();
-      return { conflict: false, sha: body.content && body.content.sha };
-    }
-
-    async function saveRemote(data) {
-      const text = JSON.stringify(data, null, 2);
-      let result = await githubPut(session.path, text, session.sha);
-      if (result.conflict) {
-        const latest = await githubGet(session.path);
-        session.sha = latest.sha;
-        result = await githubPut(session.path, text, session.sha);
-        if (result.conflict) {
-          throw new Error("Another device changed the file. Log out and unlock again.");
-        }
-        return { sha: result.sha, diverged: true };
-      }
-      return { sha: result.sha, diverged: false };
-    }
-
-    function stopIdle() {
-      if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = null;
-    }
-
-    function bumpIdle() {
-      stopIdle();
-      idleTimer = setTimeout(logout, IDLE_MS);
-    }
-
-    async function sha256hex(text) {
-      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-    }
-
-    function randomSalt() {
-      const bytes = new Uint8Array(16);
-      crypto.getRandomValues(bytes);
-      return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
-    }
-
-    function preparePin() {
-      const has = !!localStorage.getItem(PIN_HASH);
-      document.getElementById("pinTitle").textContent = has ? "Welcome back" : "Set a PIN";
-      document.getElementById("pinSub").textContent = has
-        ? "Enter your PIN to continue."
-        : "Create a PIN to protect this device.";
-      document.getElementById("pin2").hidden = has;
-      document.getElementById("pin2Lab").hidden = has;
-      document.getElementById("pinReset").hidden = !has;
-      document.getElementById("pin2").value = "";
-    }
-
-    document.getElementById("pinGo").onclick = async () => {
-      const pin = document.getElementById("pin").value;
-      const err = document.getElementById("pinErr");
-      err.textContent = "";
-      if (!pin) { err.textContent = "Enter PIN."; return; }
-
-      const existing = localStorage.getItem(PIN_HASH);
-      if (!existing) {
-        const again = document.getElementById("pin2").value;
-        if (pin !== again) { err.textContent = "PINs differ."; return; }
-        const salt = randomSalt();
-        const hash = await sha256hex(pin + salt);
-        localStorage.setItem(PIN_SALT, salt);
-        localStorage.setItem(PIN_HASH, hash);
-        document.getElementById("pin").value = "";
-        document.getElementById("pin2").value = "";
-        showLock("gh");
-        return;
-      }
-
-      const salt = localStorage.getItem(PIN_SALT) || "";
-      const hash = await sha256hex(pin + salt);
-      document.getElementById("pin").value = "";
-      if (hash !== existing) { err.textContent = "Wrong PIN."; return; }
-      showLock("gh");
-    };
-
-    document.getElementById("pinReset").onclick = () => {
-      if (!confirm("Reset PIN? You'll set a new one now. Your data is safe - it lives in GitHub.")) return;
-      localStorage.removeItem(PIN_HASH);
-      localStorage.removeItem(PIN_SALT);
-      document.getElementById("pin").value = "";
-      document.getElementById("pinErr").textContent = "";
-      preparePin();
-    };
-
-    document.getElementById("backPin").onclick = () => {
-      document.getElementById("ghErr").textContent = "";
-      showLock("pin");
-    };
-
-    document.getElementById("ghGo").onclick = async () => {
-      const err = document.getElementById("ghErr");
-      const btn = document.getElementById("ghGo");
-      err.textContent = "";
-      const user = document.getElementById("ghUser").value.trim();
-      const token = document.getElementById("ghToken").value;
-      if (!user || !token) {
-        err.textContent = "Both fields required.";
-        return;
-      }
-      session.user = user;
-      session.repo = PRIVATE_REPO;
-      session.token = token;
-      session.branch = "main";
-      session.path = "learning-tracker.json";
-      document.getElementById("ghToken").value = "";
-      btn.disabled = true;
-      try {
-        const [cssFile, jsFile, dataFile] = await Promise.all([
-          githubGet("learning-tracker.css"),
-          githubGet("learning-tracker.js"),
-          githubGet(session.path)
-        ]);
-        session.sha = dataFile.sha;
-
-        let data;
-        try { data = JSON.parse(dataFile.text); }
-        catch (_) { throw new Error("Data file is not valid JSON."); }
-
-        const style = document.createElement("style");
-        style.textContent = cssFile.text;
-        document.head.appendChild(style);
-        injected.push(style);
-
-        const script = document.createElement("script");
-        script.textContent = jsFile.text;
-        document.body.appendChild(script);
-        injected.push(script);
-
-        if (typeof window.startApp !== "function") {
-          throw new Error("learning-tracker.js loaded but startApp is missing.");
-        }
-        try { localStorage.setItem(USER_KEY, user); } catch (_) {}
-        window.startApp({
-          path: session.path,
-          data,
-          logout,
-          save: async (next) => {
-            const out = await saveRemote(next);
-            if (out.sha) session.sha = out.sha;
-            if (out.diverged) {
-              throw new Error("Saved, but another device had edited the file. Check your latest items.");
-            }
-          }
-        });
-        showApp();
-      } catch (e) {
-        unloadApp();
-        clearSession();
-        err.textContent = e.message || "Could not load the private app.";
-      } finally {
-        btn.disabled = false;
-      }
-    };
-
-    document.getElementById("logout").onclick = logout;
-    ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => {
-      if (session.token) bumpIdle();
-    }));
-    window.addEventListener("pagehide", clearSession);
-    window.addEventListener("beforeunload", clearSession);
-
-    document.getElementById("lockTheme").onclick = () => {
-      const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-      setTheme(cur === "dark" ? "light" : "dark");
-    };
-    setTheme(localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light");
-
-    try { document.getElementById("ghUser").value = localStorage.getItem(USER_KEY) || ""; } catch (_) {}
-
-    preparePin();
-    showLock("pin");
-  </script>
+  <div id="modalRoot"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./trackr-app.js"></script>
 </body>
 </html>
