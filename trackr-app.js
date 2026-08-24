@@ -76,6 +76,10 @@ function applyTheme(theme,save=true){
 }
 function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');}
 function initializeTheme(){const saved=localStorage.getItem('trackr-theme');applyTheme(saved==='light'?'light':'dark',false);}
+function syncMobileViewport(){
+  const viewport=window.visualViewport;const height=Math.round(viewport?.height||window.innerHeight);
+  document.documentElement.style.setProperty('--trackr-viewport-height',`${height}px`);
+}
 
 function toast(message, ms=2300){ const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),ms); }
 function setSyncStatus(kind,label){ const el=$('#syncIndicator');if(!el)return;el.className=`sync-indicator ${kind||''}`;const text=$('span',el);if(text)text.textContent=label; }
@@ -147,7 +151,15 @@ function openModal({title,subtitle='',body='',footer='',wide=false,locked=false,
 function closeModal(){ $('#modalRoot').innerHTML='';menuActions=[]; }
 function confirmModal(title,message,confirmText='Delete',danger=true){return new Promise(resolve=>{openModal({title,body:`<div class="danger-copy">${esc(message)}</div>`,footer:`<button class="btn secondary" data-confirm-no>Cancel</button><button class="btn ${danger?'danger':'primary'}" data-confirm-yes>${esc(confirmText)}</button>`});$('[data-confirm-no]').onclick=()=>{closeModal();resolve(false)};$('[data-confirm-yes]').onclick=()=>{closeModal();resolve(true)};});}
 function actionMenu(title,items){menuActions=items;openModal({title,body:`<div class="menu-list">${items.map((it,i)=>`<button class="menu-item ${it.danger?'danger':''}" data-menu-action="${i}"><span class="menu-icon">${icon(it.icon||'info')}</span><span>${esc(it.label)}</span></button>`).join('')}</div>`});}
-function setBusy(form,busy,label){const btn=$('button[type="submit"]',form);if(!btn)return;if(busy){btn.dataset.old=btn.textContent;btn.textContent=label||'Connecting…';btn.disabled=true}else{btn.textContent=btn.dataset.old||btn.textContent;btn.disabled=false}}
+function setBusy(form,busy,label){
+  const btn=$('button[type="submit"]',form);if(!btn)return;
+  if(busy){
+    if(!btn.dataset.oldHtml){btn.dataset.oldHtml=btn.innerHTML;btn.dataset.oldLabel=btn.getAttribute('aria-label')||'Connect and open trackr.';}
+    const busyLabel=label||'Connecting…';btn.innerHTML='<span class="connect-spinner" aria-hidden="true"></span>';btn.setAttribute('aria-label',busyLabel);btn.title=busyLabel;btn.disabled=true;
+  }else{
+    if(btn.dataset.oldHtml)btn.innerHTML=btn.dataset.oldHtml;btn.setAttribute('aria-label',btn.dataset.oldLabel||'Connect and open trackr.');btn.title=btn.dataset.oldLabel||'Connect and open trackr.';delete btn.dataset.oldHtml;delete btn.dataset.oldLabel;btn.disabled=false;
+  }
+}
 
 async function connectGitHub(form){
   const error=$('#githubAuthError');error.textContent='';const config={owner:$('#githubOwner').value.trim(),repo:$('#githubRepo').value.trim(),branch:'main',path:'trackr.json'};const token=$('#githubToken').value.trim();
@@ -167,7 +179,8 @@ function lockApp(){
   if(recording)stopRecording(false);githubToken=null;remoteSha=null;state=null;saveChain=Promise.resolve();$('#modalRoot').innerHTML='';$('#app').classList.add('hidden');$('#app').classList.remove('mobile-detail');$('#auth').classList.remove('hidden');$('#githubToken').value='';$('#githubAuthError').textContent='';setTimeout(()=>$('#githubToken').focus(),100);
 }
 function boot(){
-  initializeTheme();hydrateStaticIcons();applyTheme(document.documentElement.dataset.theme,false);
+  initializeTheme();hydrateStaticIcons();applyTheme(document.documentElement.dataset.theme,false);syncMobileViewport();
+  window.addEventListener('resize',syncMobileViewport,{passive:true});window.visualViewport?.addEventListener('resize',syncMobileViewport,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(syncMobileViewport,120),{passive:true});
   try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');if(saved){$('#githubOwner').value=saved.owner||'';$('#githubRepo').value=saved.repo||'';}}catch{localStorage.removeItem(CONFIG_KEY)}
   if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./trackr-service-worker.js').catch(error=>console.warn('Service worker registration failed',error)),{once:true});
 }
@@ -217,7 +230,7 @@ function renderChatSidebar(){
 function renderTrackerSidebar(){
   $('#sidebarHeader').innerHTML=sidebarHeader('Trackers','Systems built your way','new-tracker','New tracker','Search trackers');
   const trackers=state.trackers.filter(t=>t.name.toLowerCase().includes(searchText.toLowerCase()));
-  $('#sidebarContent').innerHTML=trackers.length?`<div class="side-section-title">My trackers</div>${trackers.map(t=>{const topics=t.categories.flatMap(c=>c.topics).length;return `<button class="side-row ${t.id===state.activeTrackerId?'active':''}" data-action="select-tracker" data-id="${t.id}"><span class="side-avatar" style="background:${esc(t.color)};color:#fff">${esc(t.name.charAt(0).toUpperCase())}</span><span class="side-copy"><span class="side-name">${esc(t.name)}</span><span class="side-preview">${t.categories.length} categories · ${topics} topics</span></span><span class="side-time">${getTrackerProgress(t)}%</span></button>`}).join('')}`:`<div class="empty-side">${searchText?'No trackers match your search.':'Create a tracker, then add your own categories and topics.'}</div>`;
+  $('#sidebarContent').innerHTML=trackers.length?`<div class="side-section-title">My trackers</div>${trackers.map(t=>{const topics=t.categories.flatMap(c=>c.topics).length;return `<button class="side-row ${t.id===state.activeTrackerId?'active':''}" data-action="select-tracker" data-id="${t.id}"><span class="side-avatar tracker-side-avatar">${esc(t.name.charAt(0).toUpperCase())}</span><span class="side-copy"><span class="side-name">${esc(t.name)}</span><span class="side-preview">${t.categories.length} categories · ${topics} topics</span></span><span class="side-time">${getTrackerProgress(t)}%</span></button>`}).join('')}`:`<div class="empty-side">${searchText?'No trackers match your search.':'Create a tracker, then add your own categories and topics.'}</div>`;
   $('#sidebarFooter').innerHTML=`<div class="sidebar-footer"><button class="sidebar-footer-btn" data-action="new-tracker">${icon('plus')}<span>Create another tracker</span></button></div>`;
   bindSideSearch();
 }
@@ -268,7 +281,7 @@ function renderTrackerContent(){
   if(!tracker){content.innerHTML=`<div class="empty-main"><div class="empty-card"><div class="empty-illustration">${icon('tracker')}</div><h2>Create your first tracker</h2><p>Add categories and topics for learning, health, projects, or any system you want to build.</p><button class="btn primary icon-text-btn" data-action="new-tracker">${icon('plus')}<span>Create tracker</span></button></div></div>`;return;}
   const progress=getTrackerProgress(tracker); const topicCount=tracker.categories.flatMap(c=>c.topics).length;
   const categories=tracker.categories.length?tracker.categories.map((c,i)=>categoryHTML(tracker,c,i)).join(''):`<div class="no-categories"><b>No categories yet</b>Add your first category, then place topics and notes inside it.</div>`;
-  content.innerHTML=`<header class="content-header tracker-header"><button class="icon-btn mobile-back" data-action="mobile-back" aria-label="Back">${icon('back')}</button><span class="content-title-avatar tracker-title-avatar" style="background:${esc(tracker.color)};color:#fff">${esc(tracker.name.charAt(0).toUpperCase())}</span><div class="content-heading"><h2>${esc(tracker.name)}</h2><p>${esc(tracker.description||`${tracker.categories.length} categories · ${topicCount} topics`)}</p></div><div class="tracker-progress"><div class="progress-label"><span>Overall progress</span><b>${progress}%</b></div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div></div><div class="content-actions"><button class="icon-btn" data-action="tracker-menu" data-id="${tracker.id}" aria-label="Tracker options">${icon('more')}</button></div></header><div class="tracker-board-wrap"><div class="tracker-toolbar"><p>Use category and topic menus to edit, move, reorder, or delete.</p><button class="btn primary icon-text-btn" data-action="new-category">${icon('plus')}<span>Add category</span></button></div><div class="category-board">${categories}</div></div>`;
+  content.innerHTML=`<header class="content-header tracker-header"><button class="icon-btn mobile-back" data-action="mobile-back" aria-label="Back">${icon('back')}</button><span class="content-title-avatar tracker-title-avatar">${esc(tracker.name.charAt(0).toUpperCase())}</span><div class="content-heading"><h2>${esc(tracker.name)}</h2><p>${esc(tracker.description||`${tracker.categories.length} categories · ${topicCount} topics`)}</p></div><div class="tracker-progress"><div class="progress-label"><span>Overall progress</span><b>${progress}%</b></div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div></div><div class="content-actions"><button class="icon-btn" data-action="tracker-menu" data-id="${tracker.id}" aria-label="Tracker options">${icon('more')}</button></div></header><div class="tracker-board-wrap"><div class="tracker-toolbar"><p>Use category and topic menus to edit, move, reorder, or delete.</p><button class="btn primary icon-text-btn" data-action="new-category">${icon('plus')}<span>Add category</span></button></div><div class="category-board">${categories}</div></div>`;
 }
 function categoryHTML(tracker,c,index){
   const done=c.topics.filter(t=>t.complete).length;

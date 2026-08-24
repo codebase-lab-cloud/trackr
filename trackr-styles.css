@@ -217,3 +217,51 @@ html[data-theme="dark"] .privacy-line{color:#aaa1ab;background:none}
   .mobile-nav:after{content:"";position:absolute;z-index:-1;left:0;right:0;bottom:calc(-1 * var(--safe-bottom));height:calc(var(--safe-bottom) + 4px);background:var(--nav-surface)}
   .workspace-sidebar,.workspace-content{bottom:calc(60px + var(--safe-bottom))}
 }
+
+/* iPhone-focused refinements */
+.tracker-side-avatar,.tracker-title-avatar{background:var(--conversation-icon-bg)!important;color:var(--conversation-icon-ink)!important}
+
+html[data-theme="dark"] .settings-card-head,
+html[data-theme="dark"] .setting-row{border-color:#3d373e}
+html[data-theme="dark"] .settings-title p,
+html[data-theme="dark"] .settings-card-head p,
+html[data-theme="dark"] .setting-copy span,
+html[data-theme="dark"] .install-steps{color:#a69fa7}
+html[data-theme="dark"] .settings-card-head h3,
+html[data-theme="dark"] .setting-copy b{color:#e7e1e8}
+html[data-theme="dark"] .settings-card{border-color:#3d373e;box-shadow:none}
+html[data-theme="dark"] .storage-note{background:#29241f;border-color:#544b37;color:#bdb49e}
+
+@media(max-width:760px){
+  html,body{height:var(--trackr-viewport-height,100dvh)!important;min-height:var(--trackr-viewport-height,100dvh)!important;background:var(--nav-surface)!important}
+  body:after{content:"";position:fixed;z-index:70;left:0;right:0;bottom:0;height:max(6px,var(--safe-bottom));background:var(--nav-surface);pointer-events:none}
+  .auth-shell,.app-shell{height:var(--trackr-viewport-height,100dvh)!important;min-height:var(--trackr-viewport-height,100dvh)!important;background:var(--surface)!important}
+  .auth-form-wrap{min-height:var(--trackr-viewport-height,100dvh)!important}
+  .workspace-content,.content-scroll,.message-list{background:var(--surface)!important}
+  .mobile-nav{position:fixed!important;bottom:0!important;height:calc(60px + var(--safe-bottom))!important;padding:5px 5px max(5px,var(--safe-bottom))!important;background:var(--nav-surface)!important;box-shadow:0 -1px 0 var(--line)}
+  .mobile-nav:after{bottom:0;height:max(6px,var(--safe-bottom));background:var(--nav-surface)}
+  .workspace-sidebar,.workspace-content{bottom:calc(60px + var(--safe-bottom))!important}
+  .settings-page{padding-top:calc(18px + var(--safe-top))!important}
+}
+
+/* Compact two-row GitHub connection form */
+.auth-card{width:min(500px,100%)}
+.auth-fields{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+.auth-pair-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.auth-connect-row{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:12px;align-items:end}
+.auth-field{min-width:0}
+.auth-field .field-label{margin:0 0 6px}
+.auth-field .auth-input,.auth-field .pin-field input{height:46px}
+.auth-field .pin-field input{padding-top:0;padding-bottom:0}
+.auth-connect-btn{width:46px;height:46px;border:0;border-radius:10px;background:var(--slack);color:#fff;display:grid;place-items:center;transition:background .16s,transform .16s}
+.auth-connect-btn:hover{background:#350d36}
+.auth-connect-btn:active{transform:scale(.97)}
+.auth-connect-btn:focus-visible{outline:3px solid rgba(18,100,163,.3);outline-offset:2px}
+.auth-connect-btn:disabled{cursor:wait;opacity:.7}
+.auth-connect-btn .ui-icon{width:20px;height:20px}
+.auth-connect-btn .connect-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:auth-spin .7s linear infinite}
+@keyframes auth-spin{to{transform:rotate(360deg)}}
+html[data-theme="dark"] .auth-connect-btn{background:#d8bddb;color:#2f1831}
+html[data-theme="dark"] .auth-connect-btn:hover{background:#e7d4e9}
+html[data-theme="dark"] .auth-connect-btn .connect-spinner{border-color:rgba(47,24,49,.25);border-top-color:#2f1831}
+@media(max-width:760px){.auth-fields{gap:13px;margin-top:19px}.auth-pair-row,.auth-connect-row{gap:9px}.auth-connect-row{grid-template-columns:minmax(0,1fr) 48px}.auth-field .auth-input,.auth-field .pin-field input,.auth-connect-btn{height:48px}.auth-connect-btn{width:48px}.auth-field .field-label{font-size:11px;white-space:nowrap}}

@@ -11,14 +11,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="trackr.">
   <meta name="format-detection" content="telephone=no">
-  <link rel="icon" type="image/png" sizes="32x32" href="./trackr-favicon.png?v=2">
-  <link rel="icon" type="image/png" sizes="192x192" href="./trackr-icon-192.png?v=2">
-  <link rel="shortcut icon" href="./trackr-favicon.png?v=2">
-  <link rel="apple-touch-icon" sizes="180x180" href="./trackr-icon-180.png?v=2">
-  <link rel="apple-touch-icon-precomposed" href="./trackr-icon-180.png?v=2">
-  <link rel="manifest" href="./trackr-manifest.json?v=2">
+  <link rel="icon" type="image/png" sizes="32x32" href="./trackr-favicon.png?v=5">
+  <link rel="icon" type="image/png" sizes="192x192" href="./trackr-icon-192.png?v=5">
+  <link rel="shortcut icon" href="./trackr-favicon.png?v=5">
+  <link rel="apple-touch-icon" sizes="180x180" href="./trackr-icon-180.png?v=5">
+  <link rel="apple-touch-icon-precomposed" href="./trackr-icon-180.png?v=5">
+  <link rel="manifest" href="./trackr-manifest.json?v=5">
   <title>trackr. — Your private space</title>
-  <link rel="stylesheet" href="./trackr-styles.css?v=2">
+  <link rel="stylesheet" href="./trackr-styles.css?v=5">
 </head>
 <body>
   <div id="auth" class="auth-shell">
@@ -42,23 +42,26 @@
         <div class="auth-icon"><span data-icon="github"></span></div>
         <p class="step-label">CONNECT PRIVATE DATA</p>
         <h2>Connect GitHub</h2>
-        <p class="auth-help">Enter a fine-grained PAT restricted to one private data repository. The token is never saved and is requested again after a refresh, close, or lock.</p>
-        <div class="auth-grid">
-          <div>
-            <label class="field-label" for="githubOwner">GitHub username</label>
-            <input class="auth-input" id="githubOwner" maxlength="80" placeholder="your-username" required autocapitalize="none" spellcheck="false">
+        <div class="auth-fields">
+          <div class="auth-pair-row">
+            <div class="auth-field">
+              <label class="field-label" for="githubOwner">GitHub username</label>
+              <input class="auth-input" id="githubOwner" maxlength="80" placeholder="your-username" required autocapitalize="none" spellcheck="false">
+            </div>
+            <div class="auth-field">
+              <label class="field-label" for="githubRepo">Private repository</label>
+              <input class="auth-input" id="githubRepo" maxlength="100" placeholder="trackr-private-data" required autocapitalize="none" spellcheck="false">
+            </div>
           </div>
-          <div>
-            <label class="field-label" for="githubRepo">Private repository</label>
-            <input class="auth-input" id="githubRepo" maxlength="100" placeholder="trackr-private-data" required autocapitalize="none" spellcheck="false">
+          <div class="auth-connect-row">
+            <div class="auth-field auth-token-field">
+              <label class="field-label" for="githubToken">Fine-grained personal access token</label>
+              <div class="pin-field"><input id="githubToken" type="password" placeholder="github_pat_…" required autocomplete="off" autocapitalize="none" spellcheck="false" data-1p-ignore data-lpignore="true"><button class="reveal-btn" type="button" data-reveal="githubToken" aria-label="Show token">Show</button></div>
+            </div>
+            <button class="auth-connect-btn" type="submit" title="Connect and open trackr." aria-label="Connect and open trackr."><span data-icon="arrowRight"></span></button>
           </div>
         </div>
-        <p class="fixed-data-note">trackr. will use the <b>main</b> branch and the fixed private data file <b>trackr.json</b>.</p>
-        <label class="field-label" for="githubToken">Fine-grained personal access token</label>
-        <div class="pin-field"><input id="githubToken" type="password" placeholder="github_pat_…" required autocomplete="off" autocapitalize="none" spellcheck="false" data-1p-ignore data-lpignore="true"><button class="reveal-btn" type="button" data-reveal="githubToken" aria-label="Show token">Show</button></div>
-        <div class="token-note"><b>Saved locally:</b> only your GitHub username and private repository name. <b>Not saved:</b> your PAT, which is requested every session.</div>
         <p id="githubAuthError" class="form-error" role="alert"></p>
-        <button class="btn primary wide" type="submit">Connect and open trackr.</button>
       </form>
       <p class="privacy-line">GitHub PAT required every session · No AI · No analytics</p>
     </section>
@@ -98,6 +101,6 @@
 
   <div id="modalRoot"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./trackr-app.js?v=2"></script>
+  <script src="./trackr-app.js?v=5"></script>
 </body>
 </html>
