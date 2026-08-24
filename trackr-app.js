@@ -78,8 +78,18 @@ function applyTheme(theme,save=true){
 function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');}
 function initializeTheme(){const saved=localStorage.getItem('trackr-theme');applyTheme(saved==='light'?'light':'dark',false);}
 function syncMobileViewport(){
-  const viewport=window.visualViewport;const height=Math.round(viewport?.height||window.innerHeight);
+  const viewport=window.visualViewport;
+  const standalone=window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  const screenHeight=standalone?window.screen?.height||0:0;
+  const layoutHeight=Math.max(window.innerHeight||0,document.documentElement.clientHeight||0,screenHeight);
+  const visualHeight=Math.round(viewport?.height||layoutHeight);
+  const keyboardMode=$('#app')?.classList.contains('keyboard-open');
+  const keyboardReduced=keyboardMode && layoutHeight-visualHeight>120;
+  const height=Math.round(keyboardReduced?visualHeight:layoutHeight);
+  const offsetTop=keyboardReduced?Math.max(0,Math.round(viewport?.offsetTop||0)):0;
+  document.documentElement.style.setProperty('--trackr-layout-height',`${Math.round(layoutHeight)}px`);
   document.documentElement.style.setProperty('--trackr-viewport-height',`${height}px`);
+  document.documentElement.style.setProperty('--trackr-viewport-offset-top',`${offsetTop}px`);
 }
 function setComposerKeyboard(open){
   clearTimeout(keyboardTimer);
@@ -191,7 +201,7 @@ function lockApp(){
 }
 function boot(){
   initializeTheme();hydrateStaticIcons();applyTheme(document.documentElement.dataset.theme,false);syncMobileViewport();
-  window.addEventListener('resize',syncMobileViewport,{passive:true});window.visualViewport?.addEventListener('resize',syncMobileViewport,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(syncMobileViewport,120),{passive:true});
+  window.addEventListener('resize',syncMobileViewport,{passive:true});window.visualViewport?.addEventListener('resize',syncMobileViewport,{passive:true});window.visualViewport?.addEventListener('scroll',syncMobileViewport,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(syncMobileViewport,120),{passive:true});
   try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');if(saved){$('#githubOwner').value=saved.owner||'';$('#githubRepo').value=saved.repo||'';}}catch{localStorage.removeItem(CONFIG_KEY)}
   if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./trackr-service-worker.js').catch(error=>console.warn('Service worker registration failed',error)),{once:true});
 }
