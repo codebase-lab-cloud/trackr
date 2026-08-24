@@ -31,7 +31,7 @@
     <section class="auth-form-wrap">
       <div class="auth-mobile-logo"><span>Tr.</span> trackr.</div>
       <form id="githubAuthForm" class="auth-card" autocomplete="off">
-        <div class="auth-icon">⌘</div>
+        <div class="auth-icon"><span data-icon="github"></span></div>
         <p class="step-label">CONNECT PRIVATE DATA</p>
         <h2>Connect GitHub</h2>
         <p class="auth-help">Enter a fine-grained PAT restricted to one private data repository. The token is never saved and is requested again after a refresh, close, or lock.</p>
@@ -59,17 +59,17 @@
   <div id="app" class="app-shell hidden" data-mode="chats">
     <header class="global-bar">
       <div class="global-workspace"><span>Tr.</span><b>trackr.</b></div>
-      <button class="global-search" id="globalSearchButton"><span aria-hidden="true">⌕</span><span>Search this workspace</span><kbd>⌘ K</kbd></button>
-      <div class="global-actions"><span class="sync-indicator" id="syncIndicator"><i></i><span>Not connected</span></span><button class="top-icon-btn" id="installHelp" title="Install help">?</button><button class="top-avatar" id="openSettings" title="Settings">ME</button></div>
+      <button class="global-search" id="globalSearchButton"><span data-icon="search" aria-hidden="true"></span><span>Search this workspace</span><kbd>⌘ K</kbd></button>
+      <div class="global-actions"><span class="sync-indicator" id="syncIndicator"><i></i><span>Not connected</span></span><button class="top-icon-btn" id="themeToggleDesktop" title="Switch theme" aria-label="Switch theme"><span data-theme-icon></span></button><button class="top-icon-btn" id="installHelp" title="Install help" aria-label="Install help"><span data-icon="info"></span></button><button class="top-avatar" id="openSettings" title="Settings" aria-label="Settings"><span data-icon="user"></span></button></div>
     </header>
 
     <nav class="app-rail" aria-label="Primary navigation">
       <div class="rail-logo">Tr.</div>
-      <button class="rail-button active" data-nav="chats" aria-label="Chats"><span class="rail-icon">☵</span><small>Chats</small></button>
-      <button class="rail-button" data-nav="trackers" aria-label="Trackers"><span class="rail-icon">▤</span><small>Trackers</small></button>
+      <button class="rail-button active" data-nav="chats" aria-label="Conversations"><span class="rail-icon" data-icon="chat"></span><small>Chats</small></button>
+      <button class="rail-button" data-nav="trackers" aria-label="Trackers"><span class="rail-icon" data-icon="tracker"></span><small>Trackers</small></button>
       <div class="rail-spacer"></div>
-      <button class="rail-button" data-nav="settings" aria-label="Settings"><span class="rail-icon">⚙</span><small>Settings</small></button>
-      <button class="rail-button" id="lockButton" aria-label="Lock"><span class="rail-icon">⌁</span><small>Lock</small></button>
+      <button class="rail-button" data-nav="settings" aria-label="Settings"><span class="rail-icon" data-icon="settings"></span><small>Settings</small></button>
+      <button class="rail-button" id="lockButton" aria-label="Disconnect"><span class="rail-icon" data-icon="lock"></span><small>Lock</small></button>
     </nav>
 
     <aside id="sidebar" class="workspace-sidebar">
@@ -81,9 +81,10 @@
     <main id="content" class="workspace-content" tabindex="-1"></main>
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
-      <button class="mobile-nav-btn active" data-nav="chats"><span>☵</span><small>Chats</small></button>
-      <button class="mobile-nav-btn" data-nav="trackers"><span>▤</span><small>Trackers</small></button>
-      <button class="mobile-nav-btn" data-nav="settings"><span>⚙</span><small>Settings</small></button>
+      <button class="mobile-nav-btn active" data-nav="chats"><span data-icon="chat"></span><small>Chats</small></button>
+      <button class="mobile-nav-btn" data-nav="trackers"><span data-icon="tracker"></span><small>Trackers</small></button>
+      <button class="mobile-nav-btn" data-nav="settings"><span data-icon="settings"></span><small>Settings</small></button>
+      <button class="mobile-nav-btn" id="themeToggleMobile" type="button"><span data-theme-icon></span><small>Theme</small></button>
     </nav>
   </div>
 

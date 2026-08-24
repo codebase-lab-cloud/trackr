@@ -50,3 +50,147 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(min-width:761px) and (max-width:1050px){.app-shell{grid-template-columns:66px 270px minmax(0,1fr)}.global-workspace{width:150px}.tracker-progress{display:none}.category-board{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}}
 @media(max-width:390px){.auth-form-wrap{padding-left:16px;padding-right:16px}.content-actions .hide-narrow{display:none}.message-row{padding-left:9px;padding-right:8px}.recording-copy span{display:none}.record-action{padding:0 9px}.sidebar-title-line h1{font-size:20px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* trackr. responsive, icon, message alignment and theme refinements */
+:root{
+  --conversation-icon-bg:#decbe0;
+  --conversation-icon-ink:#3f0e40;
+  --surface:#ffffff;
+  --surface-2:#f7f7f8;
+  --surface-3:#f2eff3;
+  --self-message:#f4eef5;
+  --self-message-border:#e3d8e5;
+  --nav-surface:#ffffff;
+}
+.ui-icon{width:20px;height:20px;display:block;flex:0 0 auto}
+.rail-icon .ui-icon,.mobile-nav-btn .ui-icon{width:22px;height:22px}
+.auth-icon .ui-icon{width:27px;height:27px}
+.top-icon-btn,.top-avatar{display:grid;place-items:center}
+.top-icon-btn .ui-icon,.top-avatar .ui-icon{width:17px;height:17px}
+.global-search .ui-icon{width:14px;height:14px}
+.sidebar-create .ui-icon{width:19px;height:19px}
+.side-search span{display:grid;place-items:center}
+.side-search span .ui-icon{width:15px;height:15px}
+.side-pin{display:inline-flex;align-items:center;color:#efe4f0}
+.side-pin .ui-icon{width:13px;height:13px}
+.header-pin{display:inline-flex;vertical-align:middle;color:var(--slack);margin-left:3px}
+.header-pin .ui-icon{width:14px;height:14px}
+.icon-btn .ui-icon,.mini-menu .ui-icon,.message-menu .ui-icon,.composer-tool .ui-icon,.composer-send .ui-icon{width:19px;height:19px}
+.icon-btn.active-pin{background:#f2e8f3;color:var(--slack)}
+.empty-illustration .ui-icon{width:38px;height:38px}
+.settings-avatar{background:var(--conversation-icon-bg)!important;color:var(--conversation-icon-ink)!important}
+.settings-avatar .ui-icon{width:19px;height:19px}
+.sidebar-footer-btn,.icon-text-btn,.add-topic-btn{display:flex;align-items:center;justify-content:center;gap:7px}
+.sidebar-footer-btn{justify-content:flex-start}
+.sidebar-footer-btn .ui-icon,.icon-text-btn .ui-icon,.add-topic-btn .ui-icon{width:16px;height:16px}
+.security-badge i{width:7px;height:7px;border-radius:50%;background:currentColor;display:block}
+.menu-icon{display:grid;place-items:center}.menu-icon .ui-icon{width:18px;height:18px}
+.modal-close{display:grid;place-items:center}.modal-close .ui-icon{width:18px;height:18px}
+
+/* Personal messages align to the right while keeping Slack-like message metadata. */
+.message-row{grid-template-columns:34px minmax(180px,680px) 42px;justify-content:end;align-items:start}
+.message-row:hover{background:transparent}
+.message-body{justify-self:end;width:fit-content;min-width:180px;max-width:100%;padding:10px 12px;background:var(--self-message);border:1px solid var(--self-message-border);border-radius:12px 4px 12px 12px}
+.message-meta{justify-content:flex-end}
+.message-user{grid-column:3;background:var(--conversation-icon-bg);color:var(--conversation-icon-ink)}
+.message-user .ui-icon{width:18px;height:18px}
+.message-menu{grid-column:1;align-self:start;justify-self:end}
+.message-text{text-align:left}
+.star-mark{display:inline-flex;color:#b87b00}.star-mark .ui-icon{width:13px;height:13px}
+.voice-note{width:min(440px,100%);background:color-mix(in srgb,var(--surface) 82%,var(--self-message));border-color:var(--self-message-border)}
+.voice-note-icon .ui-icon{width:18px;height:18px}
+
+/* Dark theme */
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --ink:#f1edf2;
+  --muted:#aaa1ab;
+  --line:#3b343c;
+  --white:#1c191d;
+  --soft:#242025;
+  --surface:#1c191d;
+  --surface-2:#211d22;
+  --surface-3:#2a242b;
+  --self-message:#342637;
+  --self-message-border:#4a384d;
+  --nav-surface:#1b181c;
+  --conversation-icon-bg:#6a476d;
+  --conversation-icon-ink:#fff;
+}
+html[data-theme="dark"] body,
+html[data-theme="dark"] .auth-shell,
+html[data-theme="dark"] .auth-form-wrap,
+html[data-theme="dark"] .workspace-content,
+html[data-theme="dark"] .content-header,
+html[data-theme="dark"] .message-composer,
+html[data-theme="dark"] .composer-box,
+html[data-theme="dark"] .modal-card,
+html[data-theme="dark"] .modal-footer,
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .category-card,
+html[data-theme="dark"] .topic-card{background:var(--surface);color:var(--ink)}
+html[data-theme="dark"] .tracker-board-wrap,
+html[data-theme="dark"] .settings-page{background:#151216}
+html[data-theme="dark"] .category-note,
+html[data-theme="dark"] .topic-card,
+html[data-theme="dark"] .voice-note,
+html[data-theme="dark"] .fixed-data-note{background:var(--surface-3);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] .composer-input,
+html[data-theme="dark"] .auth-input,
+html[data-theme="dark"] .pin-field input,
+html[data-theme="dark"] .form-field input,
+html[data-theme="dark"] .form-field textarea,
+html[data-theme="dark"] .form-field select,
+html[data-theme="dark"] .auth-card textarea{background:#211d22;color:var(--ink);border-color:#574e58}
+html[data-theme="dark"] .composer-box{border-color:#675d68}
+html[data-theme="dark"] .icon-btn,
+html[data-theme="dark"] .composer-tool,
+html[data-theme="dark"] .mini-menu{color:#d2c9d3}
+html[data-theme="dark"] .icon-btn:hover,
+html[data-theme="dark"] .composer-tool:hover,
+html[data-theme="dark"] .mini-menu:hover{background:#302a31}
+html[data-theme="dark"] .message-row:hover{background:transparent}
+html[data-theme="dark"] .date-divider:before,
+html[data-theme="dark"] .date-divider:after{background:#403841}
+html[data-theme="dark"] .mobile-nav{background:var(--nav-surface);border-color:var(--line)}
+html[data-theme="dark"] .mobile-nav-btn{color:#afa5b0}
+html[data-theme="dark"] .mobile-nav-btn.active{color:#dcbde0}
+html[data-theme="dark"] .btn.secondary{background:#252126;color:var(--ink);border-color:#5b525c}
+html[data-theme="dark"] .modal-close{background:#302a31;color:var(--ink)}
+html[data-theme="dark"] .privacy-line{color:#aaa1ab;background:none}
+
+/* Full-viewport mobile layout for iPhone and other phones. */
+@media(max-width:760px){
+  html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden;overscroll-behavior:none;background:var(--surface)}
+  body{position:fixed;inset:0}
+  .auth-shell{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;min-height:0;padding:0;overflow:auto;background:var(--surface)}
+  .auth-form-wrap{min-height:100vh;min-height:100dvh;padding:calc(14px + var(--safe-top)) 18px calc(18px + var(--safe-bottom));overflow:auto}
+  .auth-mobile-logo{margin-bottom:22px}
+  .privacy-line{position:static;margin:22px 0 0;padding:0;background:none;text-align:center}
+  .app-shell{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;min-height:0;display:block;padding:0;overflow:hidden;background:var(--surface)}
+  .workspace-sidebar,.workspace-content{position:absolute;inset:0 0 calc(60px + var(--safe-bottom)) 0;width:100%;height:auto;min-height:0}
+  .workspace-sidebar{display:flex}
+  .workspace-content{display:none}
+  .app-shell.mobile-detail .workspace-sidebar{display:none}
+  .app-shell.mobile-detail .workspace-content{display:flex}
+  .app-shell[data-mode="settings"] .workspace-sidebar{display:none}
+  .app-shell[data-mode="settings"] .workspace-content{display:flex}
+  .mobile-nav{display:flex!important;position:absolute;z-index:90;left:0;right:0;bottom:0;width:100%;height:calc(60px + var(--safe-bottom));padding:5px 5px var(--safe-bottom);background:var(--nav-surface);border-top:1px solid var(--line)}
+  .mobile-nav-btn{min-width:0;min-height:50px;padding:3px 2px;gap:3px}
+  .mobile-nav-btn>span{display:grid;place-items:center;height:24px}
+  .mobile-nav-btn small{font-size:9.5px}
+  .sidebar-head{padding:calc(12px + var(--safe-top)) 14px 10px}
+  .content-header{height:calc(58px + var(--safe-top));flex-basis:calc(58px + var(--safe-top));padding:var(--safe-top) 9px 0}
+  .tracker-header{min-height:calc(64px + var(--safe-top))}
+  .message-composer{padding:8px 9px 8px}
+  .settings-page{padding:16px 11px 20px}
+  .message-row{grid-template-columns:30px minmax(0,1fr) 36px;gap:7px;padding:8px 9px}
+  .message-body{min-width:0;max-width:calc(100vw - 91px);padding:9px 11px}
+  .message-user{width:34px;height:34px}
+  .message-menu{opacity:1;border-color:transparent;background:transparent}
+  .message-list{padding:8px 0 14px}
+  .content-scroll{overscroll-behavior:contain}
+  .content-actions .hide-narrow{display:grid!important}
+  .composer-box{border-radius:12px}
+  .toast{bottom:calc(70px + var(--safe-bottom))}
+}
