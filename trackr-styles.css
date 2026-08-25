@@ -289,7 +289,12 @@ html[data-theme="light"] .composer-input::placeholder{color:#6d686e!important;-w
 html[data-theme="light"] .composer-tool{color:#555!important}
 
 @media(max-width:760px){
-  .app-shell.keyboard-open{top:var(--trackr-viewport-offset-top,0px)!important;bottom:auto!important}
+  .app-shell.keyboard-open{
+    top:var(--trackr-viewport-offset-top,0px)!important;
+    bottom:auto!important;
+    height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 18px)!important;
+    min-height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 18px)!important;
+  }
   .app-shell.keyboard-open .mobile-nav{display:none!important}
   .app-shell.keyboard-open .workspace-sidebar,
   .app-shell.keyboard-open .workspace-content{bottom:0!important}
@@ -298,3 +303,29 @@ html[data-theme="light"] .composer-tool{color:#555!important}
 
 /* Keep the mobile brand name legible on the dark connection screen. */
 html[data-theme="dark"] .auth-mobile-logo{color:#f1edf2!important}
+
+/* Dark action menus, visible pinned state, and complete mobile navigation. */
+html[data-theme="dark"] .menu-item{
+  background:var(--surface-2);
+  color:var(--ink);
+  border:1px solid #3d373e;
+}
+html[data-theme="dark"] .menu-item:hover{background:var(--surface-3)}
+html[data-theme="dark"] .menu-item.danger{color:#ff5b83}
+html[data-theme="dark"] .header-pin{color:#dcbde0!important}
+
+@media(max-width:760px){
+  .mobile-nav-btn{
+    justify-content:flex-end!important;
+    padding:3px 2px 4px!important;
+    gap:3px!important;
+  }
+  .mobile-nav-btn small{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    color:inherit!important;
+    font-size:10px!important;
+    line-height:1.05!important;
+  }
+}
