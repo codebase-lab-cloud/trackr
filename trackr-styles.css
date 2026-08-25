@@ -430,3 +430,15 @@ html[data-theme="dark"] .security-badge.warning{background:#392918;color:#e5af64
 html[data-theme="dark"] .checklist-draft-check,html[data-theme="dark"] .chat-check{background:#211d22;border-color:#756a77}
 html[data-theme="dark"] .chat-check:checked{background:#9c78d8;border-color:#9c78d8}
 @media(max-width:760px){.checklist-draft-list{max-height:150px}.chat-checklist{min-width:min(245px,68vw)}}
+
+/* Dark message overflow button */
+html[data-theme="dark"] .message-menu{
+  background:var(--surface-2);
+  color:#d2c9d3;
+  border-color:#574e58;
+}
+html[data-theme="dark"] .message-menu:hover,
+html[data-theme="dark"] .message-menu:focus{
+  background:var(--surface-3);
+  color:#f1edf2;
+}
