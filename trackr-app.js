@@ -23,6 +23,9 @@ let searchText = '';
 let messageSearch = '';
 let currentMode = 'chats';
 let keyboardTimer = null;
+let pendingSnapshot = null;
+let pendingMessage = 'Update trackr. data';
+let lastSyncError = null;
 
 const uid = prefix => `${prefix}_${crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2)}`;
 const now = () => new Date().toISOString();
@@ -107,22 +110,37 @@ function setSyncStatus(kind,label){ const el=$('#syncIndicator');if(!el)return;e
 function utf8ToB64(value){ const bytes=te.encode(value);let binary='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(binary); }
 function b64ToUtf8(value){ const clean=String(value||'').replace(/\s/g,'');const binary=atob(clean);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return td.decode(bytes); }
 
-class GitHubError extends Error{ constructor(message,status,details=''){super(message);this.status=status;this.details=details;} }
+class GitHubError extends Error{
+  constructor(message,status,details='',meta={}){super(message);this.status=status;this.details=details;Object.assign(this,meta);}
+}
 function apiBase(){ return `https://api.github.com/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}`; }
 async function githubRequest(url,options={}){
   if(!githubToken)throw new GitHubError('GitHub token is not available. Reconnect first.',401);
   const response=await fetch(url,{...options,cache:'no-store',headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',Authorization:`Bearer ${githubToken}`,'Content-Type':'application/json',...(options.headers||{})}});
   let data=null;try{data=await response.json()}catch{}
-  if(!response.ok)throw new GitHubError(data?.message||`GitHub request failed (${response.status})`,response.status,data?.documentation_url||'');
+  if(!response.ok)throw new GitHubError(data?.message||`GitHub request failed (${response.status})`,response.status,data?.documentation_url||'',{
+    rateLimitRemaining:response.headers.get('x-ratelimit-remaining'),
+    rateLimitReset:response.headers.get('x-ratelimit-reset'),
+    requestId:response.headers.get('x-github-request-id')
+  });
   return data;
 }
+function assertRepositoryWritable(repo){
+  if(!repo?.private)throw new Error('The selected data repository is public. Use a private repository.');
+  if(repo.permissions?.push===false)throw new GitHubError('This PAT has read-only repository access.',403,'',{readOnlyToken:true});
+}
+function githubErrorMessage(err){
+  if(err?.status===401)return 'Token rejected. Confirm it is valid and not expired.';
+  if(err?.status===403&&err?.rateLimitRemaining==='0')return 'GitHub API rate limit reached. Wait until the limit resets, then retry.';
+  if(err?.status===403&&(err?.readOnlyToken||/resource not accessible|personal access token/i.test(err?.message||'')))return 'This PAT can read the repository but cannot save changes. In GitHub, set Repository permissions → Contents to Read and write, then replace the PAT in Settings.';
+  if(err?.status===403)return 'GitHub denied write access. Confirm this fine-grained PAT includes this repository and Contents: Read and write.';
+  if(err?.status===404)return 'Repository, main branch, or trackr.json was not found for this token.';
+  if(err?.status===409)return 'The repository changed on another device. Your local changes are still open; download a JSON copy before resolving the conflict.';
+  return err?.message||'Unknown error';
+}
 function handleGitHubError(err,prefix='GitHub sync failed'){
-  console.error(err);setSyncStatus('error','Sync failed');let message=err?.message||'Unknown error';
-  if(err?.status===401)message='Token rejected. Confirm it is valid and not expired.';
-  else if(err?.status===403)message='GitHub denied access. Check fine-grained repository permissions and rate limits.';
-  else if(err?.status===404)message='Repository, branch, or JSON path was not found for this token.';
-  else if(err?.status===409)message='Another device updated the file. Refresh from GitHub before trying again.';
-  toast(`${prefix}: ${message}`,5200);
+  console.error(err);setSyncStatus('error',pendingSnapshot?'Unsaved changes':'Sync failed');
+  toast(`${prefix}: ${githubErrorMessage(err)}`,7200);
 }
 
 function initialState(){
@@ -146,7 +164,7 @@ async function loadRemoteState(createWhenMissing=true){
     const file=await githubRequest(url);remoteSha=file.sha;let encoded=file.content;
     if(!encoded&&file.git_url){const blob=await githubRequest(file.git_url);encoded=blob.content;}
     if(!encoded)throw new Error('GitHub did not return JSON file content.');
-    state=migrateState(JSON.parse(b64ToUtf8(encoded)));
+    state=migrateState(JSON.parse(b64ToUtf8(encoded)));pendingSnapshot=null;lastSyncError=null;
   }catch(err){
     if(err.status===404&&createWhenMissing){state=initialState();remoteSha=null;await writeRemoteState(JSON.stringify(state),'Initialize trackr. data');return;}
     throw err;
@@ -157,11 +175,22 @@ async function writeRemoteState(snapshot,message='Update trackr. data'){
   setSyncStatus('saving','Saving…');
   const url=`${apiBase()}/contents/${encodePath(githubConfig.path)}`;
   const body={message,content:utf8ToB64(snapshot),branch:githubConfig.branch};if(remoteSha)body.sha=remoteSha;
-  const result=await githubRequest(url,{method:'PUT',body:JSON.stringify(body)});remoteSha=result.content?.sha||result.commit?.sha||remoteSha;setSyncStatus('saved','Saved to GitHub');
+  const result=await githubRequest(url,{method:'PUT',body:JSON.stringify(body)});remoteSha=result.content?.sha||result.commit?.sha||remoteSha;
 }
 async function persistState(message='Update trackr. data'){
-  if(!state||!githubToken)return false;const snapshot=JSON.stringify(state);
-  saveChain=saveChain.catch(()=>{}).then(()=>writeRemoteState(snapshot,message)).catch(err=>{handleGitHubError(err);return false;});
+  if(!state||!githubToken)return false;
+  const snapshot=JSON.stringify(state);pendingSnapshot=snapshot;pendingMessage=message;lastSyncError=null;
+  saveChain=saveChain.catch(()=>false).then(async()=>{
+    try{
+      await writeRemoteState(snapshot,message);
+      if(pendingSnapshot===snapshot){pendingSnapshot=null;lastSyncError=null;setSyncStatus('saved','Saved to GitHub');}
+      return true;
+    }catch(err){
+      lastSyncError=err;setSyncStatus('error','Unsaved changes');
+      setTimeout(()=>handleGitHubError(err,'Changes kept in this session; GitHub sync failed'),0);
+      return false;
+    }
+  });
   return saveChain;
 }
 
@@ -187,17 +216,18 @@ async function connectGitHub(form){
   if(!config.owner||!config.repo||!config.path||!token){error.textContent='Complete all GitHub connection fields.';return;}
   githubConfig=config;githubToken=token;setBusy(form,true,'Checking private repository…');
   try{
-    const repo=await githubRequest(`${apiBase()}`);if(!repo.private)throw new Error('The selected data repository is public. Use a private repository.');
+    const repo=await githubRequest(`${apiBase()}`);assertRepositoryWritable(repo);
     localStorage.setItem(CONFIG_KEY,JSON.stringify({owner:config.owner,repo:config.repo}));
     $('#githubToken').value='';setBusy(form,true,'Loading shared JSON…');await loadRemoteState(true);enterApp();
-  }catch(err){githubToken=null;remoteSha=null;handleGitHubError(err,'Connection failed');error.textContent=err.message||'Could not connect to GitHub.';}
+  }catch(err){githubToken=null;remoteSha=null;handleGitHubError(err,'Connection failed');error.textContent=githubErrorMessage(err);}
   finally{setBusy(form,false);}
 }
 function enterApp(){
   $('#auth').classList.add('hidden');$('#app').classList.remove('hidden');currentMode='chats';if(!state.activeChatId&&state.chats[0])state.activeChatId=state.chats[0].id;if(!state.activeTrackerId&&state.trackers[0])state.activeTrackerId=state.trackers[0].id;setSyncStatus('saved','Connected');render();
 }
 function lockApp(){
-  if(recording)stopRecording(false);githubToken=null;remoteSha=null;state=null;saveChain=Promise.resolve();$('#modalRoot').innerHTML='';$('#app').classList.add('hidden');$('#app').classList.remove('mobile-detail');$('#auth').classList.remove('hidden');$('#githubToken').value='';$('#githubAuthError').textContent='';setTimeout(()=>$('#githubToken').focus(),100);
+  if(pendingSnapshot){setMode('settings',true);toast('Unsynced changes are still open. Replace the PAT and retry, or download a JSON copy before disconnecting.',7200);return false;}
+  if(recording)stopRecording(false);githubToken=null;remoteSha=null;state=null;saveChain=Promise.resolve();pendingSnapshot=null;lastSyncError=null;$('#modalRoot').innerHTML='';$('#app').classList.add('hidden');$('#app').classList.remove('mobile-detail');$('#auth').classList.remove('hidden');$('#githubToken').value='';$('#githubAuthError').textContent='';setTimeout(()=>$('#githubToken').focus(),100);return true;
 }
 function boot(){
   initializeTheme();hydrateStaticIcons();applyTheme(document.documentElement.dataset.theme,false);syncMobileViewport();
@@ -315,7 +345,9 @@ function topicHTML(c,t,index){ return `<article class="topic-card"><div class="t
 function renderSettings(){
   const content=$('#content');
   const bytes=te.encode(JSON.stringify(state)).length;
-  content.innerHTML=`<div class="settings-page"><div class="settings-inner"><div class="settings-title"><h1>Settings</h1><p>GitHub synchronization, JSON data and app installation.</p></div><section class="settings-card"><div class="settings-card-head"><h3>Private GitHub repository</h3><p>This repository is the shared source of truth on every browser.</p></div><div class="setting-row"><div class="setting-copy"><b>${esc(githubConfig.owner)}/${esc(githubConfig.repo)}</b><span>Branch: ${esc(githubConfig.branch)} · File: ${esc(githubConfig.path)}</span></div><span class="security-badge"><i></i>Connected</span></div><div class="setting-row"><div class="setting-copy"><b>Synchronize now</b><span>Wait for pending uploads, then download the latest committed JSON.</span></div><button class="btn blue icon-text-btn" data-action="refresh-cloud">${icon('refresh')}<span>Refresh from GitHub</span></button></div><div class="setting-row"><div class="setting-copy"><b>Disconnect</b><span>Clears the PAT from application memory. You will enter it again to reconnect.</span></div><button class="btn secondary icon-text-btn" data-action="lock">${icon('lock')}<span>Disconnect</span></button></div></section><section class="settings-card"><div class="settings-card-head"><h3>Token handling</h3><p>The fine-grained PAT is used directly by this browser for GitHub API requests.</p></div><div class="setting-row"><div class="setting-copy"><b>Memory only</b><span>The PAT is never written to localStorage, IndexedDB, cookies, the JSON file, or either repository. Repository details are the only remembered values.</span></div><span class="security-badge"><i></i>Not persisted</span></div><div class="setting-row"><div class="setting-copy"><b>Current limitation</b><span>While connected, advanced DevTools, extensions, or malware on this device could inspect the Authorization request. Use a fine-grained, expiring PAT limited to this one repository.</span></div></div></section><section class="settings-card"><div class="settings-card-head"><h3>Shared JSON</h3><p>Chats, trackers, avatar images and voice-note data are currently stored in the configured JSON file.</p></div><div class="setting-row"><div class="setting-copy"><b>Workspace size</b><span>${(bytes/1024).toFixed(1)} KB before GitHub base64 transfer encoding</span></div></div><div class="setting-row"><div class="setting-copy"><b>Download JSON copy</b><span>Downloads the current readable workspace JSON to this device.</span></div><button class="btn secondary icon-text-btn" data-action="download-json">${icon('download')}<span>Download</span></button></div><div class="setting-row"><div class="setting-copy"><b>Replace from JSON</b><span>Validates and uploads a JSON file to the private repository.</span></div><button class="btn secondary icon-text-btn" data-action="import-json">${icon('upload')}<span>Choose file</span></button></div><div class="storage-note" style="margin:12px 18px 17px">Images and voice notes use base64 inside JSON. This is suitable for light personal usage, but the file and Git history will grow as media is added.</div></section><section class="settings-card"><div class="settings-card-head"><h3>Install on iPhone</h3><p>trackr. supports iPhone safe areas and laptop/monitor layouts.</p></div><div class="setting-row"><div class="setting-copy"><b>Add to Home Screen</b><ol class="install-steps"><li>Open the GitHub Pages URL in Safari.</li><li>Tap Share.</li><li>Choose <strong>Add to Home Screen</strong>.</li></ol><div class="storage-note">Voice notes require HTTPS microphone permission. The PAT will be requested whenever the page reloads or the app reconnects.</div></div></div></section><section class="settings-card"><div class="settings-card-head"><h3>Danger zone</h3><p>This replaces the shared repository JSON for every device.</p></div><div class="setting-row"><div class="setting-copy"><b>Reset shared workspace</b><span>Replaces all conversations and trackers with the starter workspace.</span></div><button class="btn danger icon-text-btn" data-action="reset-cloud">${icon('trash')}<span>Reset</span></button></div></section></div></div>`;
+  const pendingNotice=pendingSnapshot?`<div class="sync-warning"><b>Unsynced changes are still open on this device.</b><span>${esc(githubErrorMessage(lastSyncError))} Replace the PAT and retry, or download a JSON copy before closing trackr.</span></div>`:'';
+  const syncBadge=pendingSnapshot?'<span class="security-badge warning"><i></i>Unsynced</span>':'<span class="security-badge"><i></i>Connected</span>';
+  content.innerHTML=`<div class="settings-page"><div class="settings-inner"><div class="settings-title"><h1>Settings</h1><p>GitHub synchronization, JSON data and app installation.</p></div>${pendingNotice}<section class="settings-card"><div class="settings-card-head"><h3>Private GitHub repository</h3><p>This repository is the shared source of truth on every browser.</p></div><div class="setting-row"><div class="setting-copy"><b>${esc(githubConfig.owner)}/${esc(githubConfig.repo)}</b><span>Branch: ${esc(githubConfig.branch)} · File: ${esc(githubConfig.path)}</span></div>${syncBadge}</div><div class="setting-row"><div class="setting-copy"><b>Replace personal access token</b><span>Use a fine-grained PAT with Contents: Read and write. The current workspace stays open while the token is replaced.</span></div><button class="btn secondary icon-text-btn" data-action="replace-token">${icon('lock')}<span>Replace PAT</span></button></div><div class="setting-row"><div class="setting-copy"><b>Synchronize now</b><span>Retries unsynced changes first. Remote refresh is cancelled if saving still fails.</span></div><button class="btn blue icon-text-btn" data-action="refresh-cloud">${icon('refresh')}<span>Refresh from GitHub</span></button></div><div class="setting-row"><div class="setting-copy"><b>Disconnect</b><span>Clears the PAT from application memory. You will enter it again to reconnect.</span></div><button class="btn secondary icon-text-btn" data-action="lock">${icon('lock')}<span>Disconnect</span></button></div></section><section class="settings-card"><div class="settings-card-head"><h3>Token handling</h3><p>The fine-grained PAT is used directly by this browser for GitHub API requests.</p></div><div class="setting-row"><div class="setting-copy"><b>Memory only</b><span>The PAT is never written to localStorage, IndexedDB, cookies, the JSON file, or either repository. Repository details are the only remembered values.</span></div><span class="security-badge"><i></i>Not persisted</span></div><div class="setting-row"><div class="setting-copy"><b>Current limitation</b><span>While connected, advanced DevTools, extensions, or malware on this device could inspect the Authorization request. Use a fine-grained, expiring PAT limited to this one repository.</span></div></div></section><section class="settings-card"><div class="settings-card-head"><h3>Shared JSON</h3><p>Chats, trackers, avatar images and voice-note data are currently stored in the configured JSON file.</p></div><div class="setting-row"><div class="setting-copy"><b>Workspace size</b><span>${(bytes/1024).toFixed(1)} KB before GitHub base64 transfer encoding</span></div></div><div class="setting-row"><div class="setting-copy"><b>Download JSON copy</b><span>Downloads the current readable workspace JSON to this device.</span></div><button class="btn secondary icon-text-btn" data-action="download-json">${icon('download')}<span>Download</span></button></div><div class="setting-row"><div class="setting-copy"><b>Replace from JSON</b><span>Validates and uploads a JSON file to the private repository.</span></div><button class="btn secondary icon-text-btn" data-action="import-json">${icon('upload')}<span>Choose file</span></button></div><div class="storage-note" style="margin:12px 18px 17px">Images and voice notes use base64 inside JSON. This is suitable for light personal usage, but the file and Git history will grow as media is added.</div></section><section class="settings-card"><div class="settings-card-head"><h3>Install on iPhone</h3><p>trackr. supports iPhone safe areas and laptop/monitor layouts.</p></div><div class="setting-row"><div class="setting-copy"><b>Add to Home Screen</b><ol class="install-steps"><li>Open the GitHub Pages URL in Safari.</li><li>Tap Share.</li><li>Choose <strong>Add to Home Screen</strong>.</li></ol><div class="storage-note">Voice notes require HTTPS microphone permission. The PAT will be requested whenever the page reloads or the app reconnects.</div></div></div></section><section class="settings-card"><div class="settings-card-head"><h3>Danger zone</h3><p>This replaces the shared repository JSON for every device.</p></div><div class="setting-row"><div class="setting-copy"><b>Reset shared workspace</b><span>Replaces all conversations and trackers with the starter workspace.</span></div><button class="btn danger icon-text-btn" data-action="reset-cloud">${icon('trash')}<span>Reset</span></button></div></section></div></div>`;
 }
 async function updateStorageEstimate(){
   const el=$('#storageEstimate'); if(!el)return;
@@ -435,15 +467,44 @@ function downloadBlob(content,filename,type='application/octet-stream'){
   const blob=content instanceof Blob?content:new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
 }
 function downloadWorkspaceJSON(){ downloadBlob(JSON.stringify(state,null,2),`trackr-${new Date().toISOString().slice(0,10)}.json`,'application/json'); toast('JSON copy downloaded'); }
+async function retryPendingChanges(){
+  if(!pendingSnapshot)return true;
+  const snapshot=pendingSnapshot,message=pendingMessage;
+  try{
+    await writeRemoteState(snapshot,message);
+    if(pendingSnapshot===snapshot){pendingSnapshot=null;lastSyncError=null;setSyncStatus('saved','Saved to GitHub');}
+    return true;
+  }catch(err){lastSyncError=err;setSyncStatus('error','Unsaved changes');return false;}
+}
+function replaceTokenDialog(){
+  openModal({title:'Replace GitHub token',subtitle:'Your current workspace remains open and is not reloaded.',body:`<div class="form-field"><label for="replacementToken">Fine-grained personal access token</label><input id="replacementToken" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="none" spellcheck="false" data-1p-ignore data-lpignore="true" autofocus><small>Required permission: Repository permissions → Contents → Read and write.</small></div><p id="replacementTokenError" class="form-error" role="alert"></p>`,footer:`<button class="btn secondary" data-close-modal>Cancel</button><button class="btn primary" id="applyReplacementToken">Replace and retry</button>`});
+  $('#applyReplacementToken').onclick=async()=>{
+    const input=$('#replacementToken'),error=$('#replacementTokenError'),button=$('#applyReplacementToken');const candidate=input.value.trim();if(!candidate){error.textContent='Enter a fine-grained PAT.';return;}
+    const previous=githubToken;button.disabled=true;button.textContent='Checking…';error.textContent='';githubToken=candidate;
+    try{
+      const repo=await githubRequest(apiBase());assertRepositoryWritable(repo);
+      if(!await retryPendingChanges())throw lastSyncError||new Error('Pending changes could not be uploaded.');
+      closeModal();render();toast('PAT replaced and all pending changes saved to GitHub',5200);
+    }catch(err){githubToken=previous;lastSyncError=err;error.textContent=githubErrorMessage(err);button.disabled=false;button.textContent='Replace and retry';handleGitHubError(err,'PAT replacement failed');}
+  };
+}
 function chooseWorkspaceJSON(){
   const input=document.createElement('input');input.type='file';input.accept='application/json,.json';input.onchange=async()=>{if(!input.files[0])return;try{const parsed=migrateState(JSON.parse(await input.files[0].text()));if(!await confirmModal('Replace shared JSON?','This uploads the selected file and replaces the current workspace for every device.','Replace workspace'))return;state=parsed;await persistState('Replace trackr. data from JSON');render();toast('Shared JSON replaced')}catch(err){toast(err.message||'Invalid JSON file',4200)}};input.click();
 }
 async function refreshFromGitHub(){
-  try{await saveChain;setSyncStatus('saving','Refreshing…');await loadRemoteState(false);render();setSyncStatus('saved','Up to date');toast('Latest GitHub data loaded')}catch(err){handleGitHubError(err,'Could not refresh from GitHub')}
+  try{
+    await saveChain;
+    if(pendingSnapshot&&!await retryPendingChanges()){
+      handleGitHubError(lastSyncError,'Refresh cancelled; local changes were not overwritten');renderSettings();return;
+    }
+    setSyncStatus('saving','Refreshing…');await loadRemoteState(false);render();setSyncStatus('saved','Up to date');toast('Latest GitHub data loaded');
+  }catch(err){handleGitHubError(err,'Could not refresh from GitHub')}
 }
 async function resetRemoteWorkspace(){
   if(!await confirmModal('Reset shared workspace?','This replaces the GitHub JSON for every browser. Download a copy first if needed.','Reset everything'))return;
-  state=initialState();await persistState('Reset trackr. workspace');render();toast('Shared workspace reset');
+  const replacement=initialState(),snapshot=JSON.stringify(replacement);
+  try{await writeRemoteState(snapshot,'Reset trackr. workspace');state=replacement;pendingSnapshot=null;lastSyncError=null;setSyncStatus('saved','Saved to GitHub');render();toast('Shared workspace reset');}
+  catch(err){handleGitHubError(err,'Reset cancelled; the current workspace was not changed');}
 }
 function installHelpDialog(){openModal({title:'Install trackr. on iPhone',subtitle:'The interface accounts for iPhone 15 and 16 screen sizes and safe areas.',body:`<ol class="install-steps" style="font-size:13px"><li>Open the deployed trackr. site in <strong>Safari</strong>.</li><li>Tap the <strong>Share</strong> button in Safari.</li><li>Scroll and choose <strong>Add to Home Screen</strong>.</li><li>Confirm the name, then tap <strong>Add</strong>.</li></ol><div class="storage-note">Voice notes require microphone permission. Safari asks only when you tap the record button, and the site must use HTTPS.</div>`,footer:`<button class="btn primary" data-close-modal>Got it</button>`});}
 function globalSearchDialog(){
@@ -477,6 +538,7 @@ function handleAction(action,target){
   else if(action==='download-json')downloadWorkspaceJSON();
   else if(action==='import-json')chooseWorkspaceJSON();
   else if(action==='refresh-cloud')refreshFromGitHub();
+  else if(action==='replace-token')replaceTokenDialog();
   else if(action==='reset-cloud')resetRemoteWorkspace();
 }
 
@@ -484,8 +546,9 @@ document.addEventListener('visibilitychange',()=>{
   if(document.hidden){ hiddenAt=Date.now(); if(recording)stopRecording(false); }
   else if(state && hiddenAt && Date.now()-hiddenAt>60000){ lockApp(); toast('Reconnect to GitHub after leaving trackr. in the background'); }
 });
+window.addEventListener('beforeunload',e=>{if(pendingSnapshot){e.preventDefault();e.returnValue='';}});
 window.addEventListener('pagehide',()=>{ githubToken=null; });
-window.addEventListener('pageshow',e=>{ if(e.persisted && state && !githubToken)lockApp(); });
+window.addEventListener('pageshow',e=>{ if(e.persisted && state && !githubToken){if(pendingSnapshot){setMode('settings',true);toast('Enter a replacement PAT to save the changes still open in this session.',7200)}else lockApp();} });
 
 // Static UI events
 $$('[data-reveal]').forEach(btn=>btn.onclick=()=>{const input=$('#'+btn.dataset.reveal);const show=input.type==='password';input.type=show?'text':'password';btn.textContent=show?'Hide':'Show'});

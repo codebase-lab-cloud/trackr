@@ -341,3 +341,58 @@ html[data-theme="dark"] .header-pin{color:#dcbde0!important}
     line-height:1.05!important;
   }
 }
+
+/* Dark voice-recording controls */
+html[data-theme="dark"] .recording-panel{
+  background:var(--surface-2);
+  color:var(--ink);
+  border-color:#574e58;
+}
+html[data-theme="dark"] .recording-copy b{color:#f1edf2}
+html[data-theme="dark"] .recording-copy span{color:#aaa1ab}
+html[data-theme="dark"] .record-time{color:#ff7a9c}
+html[data-theme="dark"] .record-action.cancel{
+  background:#302a31;
+  color:#e7e1e8;
+  border:1px solid #574e58;
+}
+html[data-theme="dark"] .record-action.send{
+  background:#e01e5a;
+  color:#fff;
+}
+
+/* Accessible tracker checkboxes and unsynced-change warning */
+.topic-check{
+  -webkit-appearance:none;
+  appearance:none;
+  width:19px;
+  height:19px;
+  margin:0;
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  border:1.5px solid #817685;
+  border-radius:4px;
+  background:#fff;
+  color:#fff;
+  cursor:pointer;
+}
+.topic-check:checked{background:var(--violet);border-color:var(--violet)}
+.topic-check:checked:after{
+  content:"";
+  width:8px;
+  height:4px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:translateY(-1px) rotate(-45deg);
+}
+.topic-check:focus-visible{outline:3px solid rgba(124,92,229,.25);outline-offset:2px}
+html[data-theme="dark"] .topic-check{background:#211d22;border-color:#756a77}
+html[data-theme="dark"] .topic-check:checked{background:#9c78d8;border-color:#9c78d8}
+.sync-warning{margin:0 0 14px;padding:13px 15px;border:1px solid #d98b31;border-radius:10px;background:#fff5e8;color:#623b0d}
+.sync-warning b,.sync-warning span{display:block}
+.sync-warning b{font-size:12px}
+.sync-warning span{font-size:10.5px;line-height:1.5;margin-top:4px}
+.security-badge.warning{background:#fff0dc;color:#9a5200}
+html[data-theme="dark"] .sync-warning{background:#2b2117;border-color:#76522d;color:#e7c08e}
+html[data-theme="dark"] .security-badge.warning{background:#392918;color:#e5af64}
