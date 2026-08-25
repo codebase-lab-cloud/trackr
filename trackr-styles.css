@@ -396,3 +396,9 @@ html[data-theme="dark"] .topic-check:checked{background:#9c78d8;border-color:#9c
 .security-badge.warning{background:#fff0dc;color:#9a5200}
 html[data-theme="dark"] .sync-warning{background:#2b2117;border-color:#76522d;color:#e7c08e}
 html[data-theme="dark"] .security-badge.warning{background:#392918;color:#e5af64}
+
+/* In-context GitHub refresh controls */
+.tracker-toolbar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tracker-toolbar .tracker-toolbar-actions .btn{margin-left:0}
+.tracker-refresh{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.tracker-refresh:hover{background:var(--soft)}
