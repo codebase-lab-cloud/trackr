@@ -38,6 +38,7 @@ const localeTime = iso => new Date(iso).toLocaleTimeString([], {hour:'numeric',m
 const localeDate = iso => new Date(iso).toLocaleDateString([], {weekday:'short',day:'numeric',month:'short',year:new Date(iso).getFullYear()!==new Date().getFullYear()?'numeric':undefined});
 const dayKey = iso => { const d=new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
 const preview = text => String(text || '').replace(/\s+/g,' ').trim().slice(0,60) || 'No entries yet';
+const messagePlainText = message => message?.kind==='checklist'?(message.items||[]).map(item=>item.text).join(' '):message?.kind==='voice'?'Voice note':String(message?.text||'');
 
 const ICONS = {
   github:'<path d="M12 2.7a9.3 9.3 0 0 0-2.94 18.12c.47.09.64-.2.64-.45v-1.79c-2.62.57-3.17-1.11-3.17-1.11-.43-1.09-1.05-1.38-1.05-1.38-.86-.59.07-.58.07-.58.95.07 1.45.98 1.45.98.85 1.45 2.22 1.03 2.76.79.09-.61.33-1.03.6-1.27-2.09-.24-4.29-1.05-4.29-4.66 0-1.03.37-1.87.98-2.53-.1-.24-.42-1.2.09-2.5 0 0 .8-.26 2.56.97A8.9 8.9 0 0 1 12 6.96a8.9 8.9 0 0 1 2.33.31c1.77-1.23 2.56-.97 2.56-.97.51 1.3.19 2.26.09 2.5.61.66.98 1.5.98 2.53 0 3.62-2.21 4.41-4.31 4.65.34.29.64.87.64 1.76v2.63c0 .25.17.54.65.45A9.3 9.3 0 0 0 12 2.7Z" fill="currentColor" stroke="none"/>',
@@ -154,6 +155,7 @@ function migrateState(data){
   if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('The GitHub JSON is not a valid trackr. workspace.');
   data.version=2;data.storage='github-json';data.chats||=[];data.messages||=[];data.trackers||=[];
   for(const c of data.chats){c.pinned=!!c.pinned;c.archived=!!c.archived;c.color||=COLORS[0];}
+  for(const message of data.messages){if(message.kind==='checklist'){message.items=Array.isArray(message.items)?message.items.map(item=>({id:item.id||uid('check'),text:String(item.text||''),checked:!!item.checked})).filter(item=>item.text.trim()):[];}}
   for(const t of data.trackers){t.categories||=[];t.color||=COLORS[0];for(const c of t.categories){c.topics||=[];c.color||=COLORS[0];}}
   return data;
 }
@@ -270,7 +272,7 @@ function renderChatSidebar(){
   $('#sidebarHeader').innerHTML=sidebarHeader('Chats','Your private conversations','new-chat','New conversation','Search conversations');
   const visible=state.chats.filter(c=>showArchived?c.archived:!c.archived).filter(c=>c.name.toLowerCase().includes(searchText.toLowerCase())).sort((a,b)=>(Number(b.pinned)-Number(a.pinned))||(new Date(b.updatedAt)-new Date(a.updatedAt)));
   const pinned=visible.filter(c=>c.pinned), recent=visible.filter(c=>!c.pinned);
-  const row=c=>{const last=lastMessage(c.id);const pv=last?(last.kind==='voice'?'Voice note':preview(last.text)):'No entries yet';return `<button class="side-row ${c.id===state.activeChatId?'active':''}" data-action="select-chat" data-id="${c.id}"><span class="side-avatar" style="${avatarStyle(c)}">${avatarInner(c)}</span><span class="side-copy"><span class="side-name">${esc(c.name)} ${c.pinned?`<span class="side-pin" title="Pinned">${icon('pinFilled')}</span>`:''}</span><span class="side-preview">${esc(pv)}</span></span><span class="side-time">${last?esc(lastUpdatedLabel(last.createdAt)):''}</span></button>`};
+  const row=c=>{const last=lastMessage(c.id);const pv=last?preview(messagePlainText(last)):'No entries yet';return `<button class="side-row ${c.id===state.activeChatId?'active':''}" data-action="select-chat" data-id="${c.id}"><span class="side-avatar" style="${avatarStyle(c)}">${avatarInner(c)}</span><span class="side-copy"><span class="side-name">${esc(c.name)} ${c.pinned?`<span class="side-pin" title="Pinned">${icon('pinFilled')}</span>`:''}</span><span class="side-preview">${esc(pv)}</span></span><span class="side-time">${last?esc(lastUpdatedLabel(last.createdAt)):''}</span></button>`};
   let html=''; if(pinned.length) html+=`<div class="side-section-title">Pinned</div>${pinned.map(row).join('')}`; if(recent.length) html+=`<div class="side-section-title">${showArchived?'Archived':'Recent'}</div>${recent.map(row).join('')}`;
   if(!visible.length) html=`<div class="empty-side">${searchText?'No conversations match your search.':showArchived?'No archived conversations.':'Create a conversation for groceries, daily tasks, work notes, or anything else.'}</div>`;
   $('#sidebarContent').innerHTML=html;
@@ -302,7 +304,7 @@ function headerAvatar(item){ return `<span class="content-title-avatar" style="$
 function renderChatContent(){
   const chat=activeChat(); const content=$('#content');
   if(!chat){ content.innerHTML=`<div class="empty-main"><div class="empty-card"><div class="empty-illustration">${icon('chat')}</div><h2>No conversation selected</h2><p>Create a conversation for groceries, daily tasks, work, general notes, or anything else.</p><button class="btn primary" data-action="new-chat">Create conversation</button></div></div>`;return; }
-  const all=chatMessages(chat.id); const messages=messageSearch?all.filter(m=>(m.text||'Voice note').toLowerCase().includes(messageSearch.toLowerCase())):all;
+  const all=chatMessages(chat.id); const messages=messageSearch?all.filter(m=>messagePlainText(m).toLowerCase().includes(messageSearch.toLowerCase())):all;
   let lastDay='',html='';
   for(const m of messages){const dk=dayKey(m.createdAt);if(dk!==lastDay){html+=`<div class="date-divider"><span>${esc(localeDate(m.createdAt))}</span></div>`;lastDay=dk;}html+=messageHTML(m);}
   if(!messages.length) html=`<div class="empty-main"><div class="empty-card"><div class="empty-illustration">${icon(messageSearch?'search':'edit')}</div><h2>${messageSearch?'No matching entries':'Start writing'}</h2><p>${messageSearch?'Try a different search.':'This conversation is yours. Add a thought, list, task, or voice note.'}</p></div></div>`;
@@ -311,10 +313,13 @@ function renderChatContent(){
   if(!messageSearch) requestAnimationFrame(()=>{const scroller=$('#messageScroll');if(scroller)scroller.scrollTop=scroller.scrollHeight;});
 }
 function messageHTML(m){
-  const body=m.kind==='voice'?`<div class="voice-note"><span class="voice-note-icon">${icon('mic')}</span><div class="voice-note-copy"><div class="voice-note-title">Voice note</div><audio controls playsinline preload="metadata" src="${esc(m.audio)}"></audio></div><span class="voice-duration">${formatDuration(m.duration||0)}</span></div>`:`<div class="message-text">${nl(m.text)}</div>`;
+  let body;
+  if(m.kind==='voice')body=`<div class="voice-note"><span class="voice-note-icon">${icon('mic')}</span><div class="voice-note-copy"><div class="voice-note-title">Voice note</div><audio controls playsinline preload="metadata" src="${esc(m.audio)}"></audio></div><span class="voice-duration">${formatDuration(m.duration||0)}</span></div>`;
+  else if(m.kind==='checklist')body=`<div class="chat-checklist">${(m.items||[]).map(item=>`<label class="chat-check-row ${item.checked?'complete':''}"><input class="chat-check" type="checkbox" data-action="toggle-checklist-item" data-message="${m.id}" data-item="${item.id}" ${item.checked?'checked':''}><span>${esc(item.text)}</span></label>`).join('')}</div>`;
+  else body=`<div class="message-text">${nl(m.text)}</div>`;
   return `<article class="message-row"><button class="message-menu" data-action="message-menu" data-id="${m.id}" aria-label="Entry options">${icon('more')}</button><div class="message-body"><div class="message-meta"><span class="message-author">You</span><span class="message-time">${esc(localeTime(m.createdAt))}</span>${m.editedAt?'<span class="edited">edited</span>':''}${m.starred?`<span class="star-mark" title="Starred">${icon('star')}</span>`:''}</div>${body}</div><span class="message-user">${icon('user')}</span></article>`;
 }
-function composerHTML(){ return `<footer class="message-composer"><div class="composer-box"><textarea id="composerInput" class="composer-input" rows="1" placeholder="Write in ${esc(activeChat()?.name||'conversation')}…"></textarea><div class="composer-tools"><button class="composer-tool" data-action="voice-record" title="Record voice note" aria-label="Record voice note">${icon('mic')}</button><button class="composer-tool" data-action="composer-tip" title="Writing tips" aria-label="Writing tips">${icon('text')}</button><span class="composer-spacer"></span><button id="sendText" class="composer-send" title="Send" aria-label="Send" disabled>${icon('send')}</button></div></div></footer>`; }
+function composerHTML(){ return `<footer class="message-composer"><div class="composer-box"><textarea id="composerInput" class="composer-input" rows="1" placeholder="Write in ${esc(activeChat()?.name||'conversation')}…"></textarea><div class="composer-tools"><button class="composer-tool" data-action="voice-record" title="Record voice note" aria-label="Record voice note">${icon('mic')}</button><button class="composer-tool" data-action="composer-tip" title="Writing tips" aria-label="Writing tips">${icon('text')}</button><button class="composer-tool" data-action="checklist-compose" title="Create checklist" aria-label="Create checklist">${icon('tracker')}</button><span class="composer-spacer"></span><button id="sendText" class="composer-send" title="Send" aria-label="Send" disabled>${icon('send')}</button></div></div></footer>`; }
 function recordingHTML(){ return `<footer class="message-composer"><div class="recording-panel"><span class="recording-pulse"></span><div class="recording-copy"><b>Recording voice note</b><span>Microphone audio stays on this device</span></div><strong class="record-time" id="recordTimer">${formatDuration((Date.now()-recording.startedAt)/1000)}</strong><button class="record-action cancel" data-action="voice-cancel">Cancel</button><button class="record-action send" data-action="voice-send">Send</button></div></footer>`; }
 function bindComposer(){
   const input=$('#composerInput'),send=$('#sendText'); if(!input||!send)return;
@@ -322,6 +327,34 @@ function bindComposer(){
   input.addEventListener('focus',()=>setComposerKeyboard(true));
   input.addEventListener('blur',()=>setComposerKeyboard(false));
   input.addEventListener('input',update); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTextMessage();}}); send.onclick=sendTextMessage;
+}
+function showChecklistComposer(){
+  const footer=$('.message-composer');if(!footer)return;
+  footer.innerHTML=`<div class="composer-box checklist-compose-box"><div class="checklist-compose-head"><span>${icon('tracker')}<b>Checklist</b></span><button id="cancelChecklist" type="button" aria-label="Cancel checklist">${icon('close')}</button></div><div class="checklist-draft-list" id="checklistDraftList"></div><div class="checklist-compose-tools"><button id="addChecklistRow" type="button">${icon('plus')}<span>Add item</span></button><span class="composer-spacer"></span><button id="sendChecklist" class="composer-send" type="button" title="Send checklist" aria-label="Send checklist" disabled>${icon('send')}</button></div></div>`;
+  bindChecklistComposer();
+}
+function bindChecklistComposer(){
+  const list=$('#checklistDraftList'),send=$('#sendChecklist');if(!list||!send)return;
+  const update=()=>{send.disabled=!$$('.checklist-draft-input',list).some(input=>input.value.trim())};
+  const addRow=(after=null)=>{
+    const row=document.createElement('div');row.className='checklist-draft-row';row.innerHTML='<span class="checklist-draft-check" aria-hidden="true"></span><input class="checklist-draft-input" maxlength="240" placeholder="List item" autocomplete="off">';
+    if(after?.nextSibling)list.insertBefore(row,after.nextSibling);else list.append(row);
+    const input=$('.checklist-draft-input',row);input.addEventListener('input',update);input.addEventListener('keydown',event=>{
+      if(event.key==='Enter'){event.preventDefault();if(input.value.trim())addRow(row);}
+      else if(event.key==='Backspace'&&!input.value&&list.children.length>1){event.preventDefault();const previous=row.previousElementSibling||row.nextElementSibling;row.remove();$('.checklist-draft-input',previous)?.focus();update();}
+    });input.focus();update();
+  };
+  list.addEventListener('focusin',()=>setComposerKeyboard(true));
+  list.addEventListener('focusout',event=>{if(!list.contains(event.relatedTarget))setComposerKeyboard(false)});
+  $('#addChecklistRow').onclick=()=>addRow(list.lastElementChild);
+  $('#cancelChecklist').onclick=()=>{setComposerKeyboard(false);renderChatContent()};
+  send.onclick=()=>sendChecklistMessage($$('.checklist-draft-input',list).map(input=>input.value.trim()).filter(Boolean));
+  addRow();
+}
+async function sendChecklistMessage(values){
+  const chat=activeChat();if(!chat||!values.length)return;
+  state.messages.push({id:uid('msg'),chatId:chat.id,kind:'checklist',items:values.map(text=>({id:uid('check'),text,checked:false})),starred:false,createdAt:now(),editedAt:null});chat.updatedAt=now();
+  await persistState('Send checklist');setComposerKeyboard(false);render();
 }
 async function sendTextMessage(){
   const input=$('#composerInput'),text=input?.value.trim(); const chat=activeChat(); if(!text||!chat)return;
@@ -510,7 +543,7 @@ function installHelpDialog(){openModal({title:'Install trackr. on iPhone',subtit
 function globalSearchDialog(){
   openModal({title:'Search workspace',subtitle:'Find conversations, entries, trackers, categories and topics.',wide:true,body:`<div class="form-field"><input id="globalSearchInput" placeholder="Type to search everything" autofocus></div><div id="globalSearchResults"></div>`});
   const input=$('#globalSearchInput'),results=$('#globalSearchResults');
-  const update=()=>{const q=input.value.trim().toLowerCase();if(!q){results.innerHTML='<div class="empty-side" style="color:#777">Start typing to search your private workspace.</div>';return;}let items=[];state.chats.filter(c=>c.name.toLowerCase().includes(q)).forEach(c=>items.push({type:'Conversation',name:c.name,fn:()=>{state.activeChatId=c.id;messageSearch='';closeModal();setMode('chats',true)}}));state.messages.filter(m=>(m.text||'voice note').toLowerCase().includes(q)).slice(0,20).forEach(m=>{const c=state.chats.find(x=>x.id===m.chatId);items.push({type:c?.name||'Conversation',name:m.kind==='voice'?'Voice note':preview(m.text),fn:()=>{state.activeChatId=m.chatId;messageSearch=q;closeModal();setMode('chats',true)}})});state.trackers.forEach(t=>{if(t.name.toLowerCase().includes(q))items.push({type:'Tracker',name:t.name,fn:()=>{state.activeTrackerId=t.id;closeModal();setMode('trackers',true)}});t.categories.forEach(c=>{if(c.name.toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q))items.push({type:`${t.name} · Category`,name:c.name,fn:()=>{state.activeTrackerId=t.id;closeModal();setMode('trackers',true)}});c.topics.forEach(x=>{if(x.name.toLowerCase().includes(q)||(x.notes||'').toLowerCase().includes(q))items.push({type:`${t.name} · ${c.name}`,name:x.name,fn:()=>{state.activeTrackerId=t.id;closeModal();setMode('trackers',true)}})})})});window.__searchActions=items.map(x=>x.fn);results.innerHTML=items.length?`<div class="menu-list">${items.slice(0,30).map((x,i)=>`<button class="menu-item" data-search-result="${i}"><span class="menu-icon">${icon('search')}</span><span><b>${esc(x.name)}</b><br><small>${esc(x.type)}</small></span></button>`).join('')}</div>`:'<div class="empty-side" style="color:#777">No results found.</div>';};input.oninput=update;update();
+  const update=()=>{const q=input.value.trim().toLowerCase();if(!q){results.innerHTML='<div class="empty-side" style="color:#777">Start typing to search your private workspace.</div>';return;}let items=[];state.chats.filter(c=>c.name.toLowerCase().includes(q)).forEach(c=>items.push({type:'Conversation',name:c.name,fn:()=>{state.activeChatId=c.id;messageSearch='';closeModal();setMode('chats',true)}}));state.messages.filter(m=>messagePlainText(m).toLowerCase().includes(q)).slice(0,20).forEach(m=>{const c=state.chats.find(x=>x.id===m.chatId);items.push({type:c?.name||'Conversation',name:preview(messagePlainText(m)),fn:()=>{state.activeChatId=m.chatId;messageSearch=q;closeModal();setMode('chats',true)}})});state.trackers.forEach(t=>{if(t.name.toLowerCase().includes(q))items.push({type:'Tracker',name:t.name,fn:()=>{state.activeTrackerId=t.id;closeModal();setMode('trackers',true)}});t.categories.forEach(c=>{if(c.name.toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q))items.push({type:`${t.name} · Category`,name:c.name,fn:()=>{state.activeTrackerId=t.id;closeModal();setMode('trackers',true)}});c.topics.forEach(x=>{if(x.name.toLowerCase().includes(q)||(x.notes||'').toLowerCase().includes(q))items.push({type:`${t.name} · ${c.name}`,name:x.name,fn:()=>{state.activeTrackerId=t.id;closeModal();setMode('trackers',true)}})})})});window.__searchActions=items.map(x=>x.fn);results.innerHTML=items.length?`<div class="menu-list">${items.slice(0,30).map((x,i)=>`<button class="menu-item" data-search-result="${i}"><span class="menu-icon">${icon('search')}</span><span><b>${esc(x.name)}</b><br><small>${esc(x.type)}</small></span></button>`).join('')}</div>`:'<div class="empty-side" style="color:#777">No results found.</div>';};input.oninput=update;update();
 }
 
 function handleAction(action,target){
@@ -523,6 +556,7 @@ function handleAction(action,target){
   else if(action==='search-messages')searchMessagesDialog();
   else if(action==='message-menu'){const m=state.messages.find(x=>x.id===id);if(m)messageMenu(m);}
   else if(action==='voice-record')startRecording();
+  else if(action==='checklist-compose')showChecklistComposer();
   else if(action==='voice-cancel')stopRecording(false);
   else if(action==='voice-send')stopRecording(true);
   else if(action==='composer-tip')toast('Press Enter to save. Use Shift + Enter for a new line.');
@@ -562,7 +596,11 @@ document.addEventListener('click',e=>{
   const menu=e.target.closest('[data-menu-action]');if(menu){const fn=menuActions[Number(menu.dataset.menuAction)]?.fn;closeModal();fn?.();return;}
   const search=e.target.closest('[data-search-result]');if(search){window.__searchActions?.[Number(search.dataset.searchResult)]?.();return;}
 });
-document.addEventListener('change',e=>{const el=e.target;if(el.matches('[data-action="toggle-topic"]')){const c=activeTracker()?.categories.find(x=>x.id===el.dataset.category),t=c?.topics.find(x=>x.id===el.dataset.id);if(t){t.complete=el.checked;activeTracker().updatedAt=now();persistState('Update topic completion');renderContent();}}});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.matches('[data-action="toggle-topic"]')){const c=activeTracker()?.categories.find(x=>x.id===el.dataset.category),t=c?.topics.find(x=>x.id===el.dataset.id);if(t){t.complete=el.checked;activeTracker().updatedAt=now();persistState('Update topic completion');renderContent();}}
+  else if(el.matches('[data-action="toggle-checklist-item"]')){const message=state?.messages.find(item=>item.id===el.dataset.message),entry=message?.items?.find(item=>item.id===el.dataset.item);if(entry){entry.checked=el.checked;const chat=state.chats.find(item=>item.id===message.chatId);if(chat)chat.updatedAt=now();persistState('Update chat checklist');renderContent();}}
+});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'&&state){e.preventDefault();globalSearchDialog()}if(e.key==='Escape'&&$('#modalRoot').children.length)closeModal();});
 
 boot();

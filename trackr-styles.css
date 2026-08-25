@@ -402,3 +402,31 @@ html[data-theme="dark"] .security-badge.warning{background:#392918;color:#e5af64
 .tracker-toolbar .tracker-toolbar-actions .btn{margin-left:0}
 .tracker-refresh{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
 .tracker-refresh:hover{background:var(--soft)}
+
+/* Chat checklist composer and interactive checklist messages */
+.checklist-compose-head{min-height:42px;padding:8px 10px 6px;display:flex;align-items:center;border-bottom:1px solid var(--line)}
+.checklist-compose-head>span{display:flex;align-items:center;gap:8px;font-size:12px}
+.checklist-compose-head .ui-icon{width:18px;height:18px;color:var(--violet)}
+.checklist-compose-head button{margin-left:auto;width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:var(--muted);display:grid;place-items:center}
+.checklist-compose-head button:hover{background:var(--soft)}
+.checklist-compose-head button .ui-icon{width:17px;height:17px;color:inherit}
+.checklist-draft-list{max-height:180px;overflow:auto;padding:7px 10px 3px}
+.checklist-draft-row{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:8px;min-height:38px}
+.checklist-draft-check{width:18px;height:18px;border:1.5px solid #817685;border-radius:4px;background:var(--surface)}
+.checklist-draft-input{width:100%;height:36px;border:0;border-bottom:1px solid var(--line);outline:0;background:transparent;color:var(--ink);padding:0 2px;font-size:16px}
+.checklist-draft-input::placeholder{color:var(--muted)}
+.checklist-compose-tools{height:44px;padding:4px 7px 7px;display:flex;align-items:center;gap:6px}
+#addChecklistRow{height:32px;border:0;border-radius:7px;background:transparent;color:var(--muted);display:flex;align-items:center;gap:6px;padding:0 8px;font-size:11px;font-weight:750}
+#addChecklistRow:hover{background:var(--soft)}
+#addChecklistRow .ui-icon{width:16px;height:16px}
+.chat-checklist{display:flex;flex-direction:column;gap:4px;margin-top:8px;min-width:min(270px,65vw)}
+.chat-check-row{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;align-items:start;padding:5px 0;cursor:pointer}
+.chat-check-row span{font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.chat-check-row.complete span{text-decoration:line-through;color:var(--muted)}
+.chat-check{-webkit-appearance:none;appearance:none;width:18px;height:18px;margin:0;border:1.5px solid #817685;border-radius:4px;background:var(--surface);color:#fff;display:grid;place-items:center;cursor:pointer}
+.chat-check:checked{background:var(--violet);border-color:var(--violet)}
+.chat-check:checked:after{content:"";width:8px;height:4px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-1px) rotate(-45deg)}
+.chat-check:focus-visible{outline:3px solid rgba(124,92,229,.25);outline-offset:2px}
+html[data-theme="dark"] .checklist-draft-check,html[data-theme="dark"] .chat-check{background:#211d22;border-color:#756a77}
+html[data-theme="dark"] .chat-check:checked{background:#9c78d8;border-color:#9c78d8}
+@media(max-width:760px){.checklist-draft-list{max-height:150px}.chat-checklist{min-width:min(245px,68vw)}}
