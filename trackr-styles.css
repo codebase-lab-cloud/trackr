@@ -290,10 +290,11 @@ html[data-theme="light"] .composer-tool{color:#555!important}
 
 @media(max-width:760px){
   .app-shell.keyboard-open{
+    position:absolute!important;
     top:var(--trackr-viewport-offset-top,0px)!important;
     bottom:auto!important;
-    height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 18px)!important;
-    min-height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 18px)!important;
+    height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 6px)!important;
+    min-height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 6px)!important;
   }
   .app-shell.keyboard-open .mobile-nav{display:none!important}
   .app-shell.keyboard-open .workspace-sidebar,
@@ -316,9 +317,12 @@ html[data-theme="dark"] .header-pin{color:#dcbde0!important}
 
 @media(max-width:760px){
   .mobile-nav-btn{
-    justify-content:flex-end!important;
-    padding:3px 2px 4px!important;
+    height:auto!important;
+    align-self:stretch!important;
+    justify-content:center!important;
+    padding:2px!important;
     gap:3px!important;
+    overflow:visible!important;
   }
   .mobile-nav-btn small{
     display:block!important;
