@@ -236,7 +236,7 @@ html[data-theme="dark"] .storage-note{background:#29241f;border-color:#544b37;co
 
 @media(max-width:760px){
   html,body{height:var(--trackr-layout-height,100dvh)!important;min-height:var(--trackr-layout-height,100dvh)!important;background:var(--nav-surface)!important}
-  body:after{content:"";position:fixed;z-index:70;left:0;right:0;bottom:0;height:max(6px,var(--safe-bottom));background:var(--nav-surface);pointer-events:none}
+  body:after{display:none!important}
   .auth-shell,.app-shell{height:var(--trackr-viewport-height,100dvh)!important;min-height:var(--trackr-viewport-height,100dvh)!important;background:var(--surface)!important}
   .auth-form-wrap{min-height:var(--trackr-viewport-height,100dvh)!important}
   .workspace-content,.content-scroll,.message-list{background:var(--surface)!important}
@@ -293,13 +293,21 @@ html[data-theme="light"] .composer-tool{color:#555!important}
     position:absolute!important;
     top:var(--trackr-viewport-offset-top,0px)!important;
     bottom:auto!important;
-    height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 6px)!important;
-    min-height:calc(var(--trackr-viewport-height,100dvh) + var(--safe-bottom) + 6px)!important;
+    height:var(--trackr-viewport-height,100dvh)!important;
+    min-height:var(--trackr-viewport-height,100dvh)!important;
   }
   .app-shell.keyboard-open .mobile-nav{display:none!important}
   .app-shell.keyboard-open .workspace-sidebar,
   .app-shell.keyboard-open .workspace-content{bottom:0!important}
-  .app-shell.keyboard-open .message-composer{padding-bottom:2px!important}
+  .app-shell.keyboard-open .content-scroll{padding-bottom:104px!important}
+  .app-shell.keyboard-open .message-composer{
+    position:absolute!important;
+    z-index:25;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:6px 9px 2px!important;
+  }
 }
 
 /* Keep the mobile brand name legible on the dark connection screen. */
